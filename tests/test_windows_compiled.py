@@ -114,7 +114,7 @@ class WindowsCompiledTests(unittest.TestCase):
             self.assertEqual(manifest["python"]["sha256"], "97dae5274cc54867065e8d5a3226e48c35017ed332a0fdb0e27d5b5821961297")
             self.assertTrue((app / "runtime/LICENSE.txt").is_file())
             resolved = self.run_exe(app, "--check-runtime", bundled=True).stdout.strip()
-            self.assertEqual(Path(resolved), app / "runtime/python.exe")
+            self.assertTrue(Path(resolved).samefile(app / "runtime/python.exe"))
             self.assertIn("Native WPF smoke passed", self.run_exe(app, "--smoke-test", bundled=True).stdout)
             self.assertIn("Native self-test passed", self.run_exe(app, "--self-test", bundled=True).stdout)
             self.run_exe(app, "--render", str(folder / "compiled settings.png"), "--render-settings", bundled=True)
@@ -129,6 +129,18 @@ class WindowsCompiledTests(unittest.TestCase):
                                     capture_output=True, encoding="utf-8", timeout=30)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue(json.loads(result.stdout)["demo"])
+            powershell = str(Path(os.environ["SystemRoot"]) / "System32/WindowsPowerShell/v1.0/powershell.exe")
+            result = subprocess.run([powershell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
+                                     str(app / "bin/nerfed.ps1"), "selftest"], env=env,
+                                    capture_output=True, encoding="utf-8", timeout=30)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("18/18", result.stdout)
+            self.assertIn("selftest: PASS", result.stdout)
+            self.assertNotIn("skip", result.stdout.lower())
+            self.assertEqual((app / "tests/fixtures/reference_subset.jsonl").read_bytes(),
+                             (ROOT / "tests/fixtures/reference_subset.jsonl").read_bytes())
+            self.assertEqual([str(path.relative_to(app / "tests")) for path in (app / "tests").rglob("*") if path.is_file()],
+                             [str(Path("fixtures/reference_subset.jsonl"))])
             # Hook generation is read-only: decode its command and prove it pins bundled Python.
             code = "import runpy; ns=runpy.run_path(" + repr(str(backend)) + ",run_name='native_contract'); print(ns['powershell_hook_command']('Stop'))"
             result = subprocess.run([str(app / "runtime/python.exe"), "-X", "utf8", "-c", code],
@@ -136,7 +148,7 @@ class WindowsCompiledTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             encoded = result.stdout.strip().split()[-1]
             hook = base64.b64decode(encoded).decode("utf-16-le")
-            self.assertIn(str(app / "runtime/python.exe"), hook)
+            self.assertIn(resolved, hook)
             # An explicitly fake setup target verifies install/wrapper resolution with no writes
             # to real Codex registration. The real backend is never called by install in this test.
             backend.write_text("import json,sys\nprint(json.dumps({'python':sys.executable,'args':sys.argv[1:]},ensure_ascii=False))\n", encoding="utf-8")
@@ -146,7 +158,7 @@ class WindowsCompiledTests(unittest.TestCase):
                                     capture_output=True, encoding="utf-8", timeout=30)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             record = next(json.loads(line) for line in result.stdout.splitlines() if line.startswith("{"))
-            self.assertEqual(Path(record["python"]), app / "runtime/python.exe")
+            self.assertTrue(Path(record["python"]).samefile(app / "runtime/python.exe"))
             self.assertEqual(record["args"], ["setup", "--no-trust"])
             result = subprocess.run([powershell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
                                      str(app / "bin/nerfed.ps1"), "config", "set", "codex_bin", "C:\\中文 path\\codex.exe"],

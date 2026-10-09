@@ -11,6 +11,7 @@
   checks. Historical errors remain visible and are not presented as a fully healthy diagnosis.
 - Preserve Chinese interpreter paths and CLI/install output under legacy Windows code pages;
   compiled launchers start the EXE directly and return diagnostic exit codes.
+- Include the existing offline reference data so portable `selftest` runs all 18 comparisons.
 
 ## Windows 0.5.3-port.2 — 2026-10-09
 

@@ -10,7 +10,10 @@ compiled synthetic screenshot, unchanged ModelTrace digest and complete regressi
 
 `python -X utf8 -m unittest discover -s tests -v`: **94 tests passed in 95.085 seconds**,
 exit 0 on Windows/Python 3.11.2. The portable development archive was rebuilt from the final
-implementation before this run. It is a test snapshot, not a publishable release artifact.
+frontend/backend implementation before this run. Subsequent package acceptance adds the existing
+18-row reference fixture and tests Windows long/8.3 path identity using the actual file. The
+compiled package contract is rechecked after those adjustments, and the release records exact-HEAD
+CI results. Development archives are test snapshots, not publishable release artifacts.
 
 New coverage includes:
 

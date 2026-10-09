@@ -38,6 +38,10 @@ Keep the statistical scorer, prompts, bank and ledger formats shared with the or
 Shipping Python modules alongside an embedded interpreter is deliberate; this release compiles
 the desktop application, not the detection algorithm into a second native implementation.
 Retain the original MIT license, upstream ancestry, ModelTrace provenance and source package.
+Include the existing small `tests/fixtures/reference_subset.jsonl` data file in the portable
+archive so its own `selftest` verifies all 18 reference outputs. It is offline data; the test
+suite's Python source is not needed in the portable distribution. Formal archive acceptance
+revealed that excluding it made the original self-test skip its reference comparisons.
 
 For Windows JSON writes, reproduce temporary target-handle contention in isolated fixtures before
 adding bounded retries. Persistent failures must propagate, preserve the previous JSON and clean

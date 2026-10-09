@@ -50,6 +50,11 @@ try {
     $portable = Join-Path $portableParent 'IsGPTNerfed'
     [IO.Directory]::CreateDirectory($portable) | Out-Null
     foreach ($name in @('plugin', 'bin', '.agents', 'docs')) { Copy-Item -LiteralPath (Join-Path $sourceRoot $name) -Destination (Join-Path $portable $name) -Recurse }
+    # The backend's built-in offline selftest resolves this exact original reference path.
+    # Ship its data fixture, without shipping the test runner/source files.
+    $fixtures = Join-Path $portable 'tests/fixtures'
+    [IO.Directory]::CreateDirectory($fixtures) | Out-Null
+    Copy-Item -LiteralPath (Join-Path $sourceRoot 'tests/fixtures/reference_subset.jsonl') -Destination (Join-Path $fixtures 'reference_subset.jsonl')
     foreach ($name in @('launch.ps1', 'launch.cmd', 'install.ps1', 'uninstall.ps1', 'LICENSE', 'NOTICE.md', 'README.md', 'README.zh-CN.md', 'CHANGELOG.md')) {
         $file = Join-Path $sourceRoot $name
         if (Test-Path -LiteralPath $file -PathType Leaf) { Copy-Item -LiteralPath $file -Destination (Join-Path $portable $name) }
