@@ -120,34 +120,61 @@ class AtomicJsonTests(unittest.TestCase):
                 os.chmod(target, stat.S_IWRITE | stat.S_IREAD)
 
     def test_concurrent_writers_in_one_process_have_independent_temporary_files(self):
-        with tempfile.TemporaryDirectory(prefix="nerfed JSON threads ") as temp:
-            target = Path(temp) / "state.json"
-            barrier = threading.Barrier(2)
-            replace = os.replace
-            sources, errors = [], []
+        for inject_denial in (False, True):
+            with self.subTest(inject_denial=inject_denial), tempfile.TemporaryDirectory(prefix="nerfed JSON threads ") as temp:
+                target = Path(temp) / "state.json"
+                barrier = threading.Barrier(2)
+                replace = os.replace
+                state_lock = threading.Lock()
+                sources, errors, injected = [], [], []
+                attempts = {}
+                retry_source = None
 
-            def rendezvous(source, destination):
-                sources.append(source)
-                barrier.wait(timeout=3)
-                replace(source, destination)
+                def rendezvous(source, destination):
+                    nonlocal retry_source
+                    with state_lock:
+                        attempt = attempts[source] = attempts.get(source, 0) + 1
+                        if attempt == 1:
+                            sources.append(source)
+                            if inject_denial and retry_source is None:
+                                retry_source = source
+                    # Only synchronize each writer's first attempt. A retry must
+                    # not wait for a peer that may already have finished writing.
+                    if attempt == 1:
+                        barrier.wait(timeout=3)
+                    if inject_denial and source == retry_source and attempt == 1:
+                        injected.append(source)
+                        error = PermissionError(errno.EACCES, "injected transient replace denial", source)
+                        error.winerror = 5
+                        raise error
+                    replace(source, destination)
 
-            def write(value):
-                try:
-                    dgc.write_json(str(target), {"writer": value})
-                except BaseException as error:
-                    errors.append(error)
+                def write(value):
+                    try:
+                        dgc.write_json(str(target), {"writer": value})
+                    except BaseException as error:
+                        errors.append(error)
 
-            with mock.patch.object(dgc.os, "replace", side_effect=rendezvous):
-                threads = [threading.Thread(target=write, args=(i,)) for i in (1, 2)]
-                for thread in threads:
-                    thread.start()
-                for thread in threads:
-                    thread.join(timeout=5)
-            self.assertFalse(any(thread.is_alive() for thread in threads))
-            self.assertEqual(errors, [])
-            self.assertEqual(len(set(sources)), 2)
-            self.assertIn(json.loads(target.read_text(encoding="utf-8"))["writer"], (1, 2))
-            self.assertEqual(list(Path(temp).glob("*.tmp")), [])
+                # Exercise Windows retry behavior deterministically on every CI OS.
+                system = "win32" if inject_denial else sys.platform
+                with mock.patch.object(dgc.sys, "platform", system), \
+                        mock.patch.object(dgc.os, "replace", side_effect=rendezvous):
+                    threads = [threading.Thread(target=write, args=(i,)) for i in (1, 2)]
+                    for thread in threads:
+                        thread.start()
+                    for thread in threads:
+                        thread.join(timeout=5)
+                self.assertFalse(any(thread.is_alive() for thread in threads))
+                self.assertEqual(errors, [])
+                self.assertEqual(len(sources), 2)
+                self.assertEqual(len(set(sources)), 2)
+                self.assertFalse(barrier.broken)
+                if inject_denial:
+                    self.assertEqual(injected, [retry_source])
+                    self.assertGreaterEqual(attempts[retry_source], 2)
+                self.assertLessEqual(max(attempts.values()), len(dgc.JSON_REPLACE_RETRY_DELAYS) + 1)
+                self.assertIn(json.loads(target.read_text(encoding="utf-8"))["writer"], (1, 2))
+                self.assertEqual(list(Path(temp).glob("*.tmp")), [])
 
     def test_serialization_failure_removes_temporary_file_and_keeps_target(self):
         with tempfile.TemporaryDirectory(prefix="nerfed JSON invalid ") as temp:

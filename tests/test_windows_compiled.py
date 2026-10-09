@@ -137,18 +137,24 @@ class WindowsCompiledTests(unittest.TestCase):
             self.assertIn("18/18", result.stdout)
             self.assertIn("selftest: PASS", result.stdout)
             self.assertNotIn("skip", result.stdout.lower())
-            self.assertEqual((app / "tests/fixtures/reference_subset.jsonl").read_bytes(),
-                             (ROOT / "tests/fixtures/reference_subset.jsonl").read_bytes())
+            # Git archive and a Windows checkout may use different newline sequences.
+            # Compare the original reference records, including their exact sample strings.
+            packaged_rows = [json.loads(line) for line in (app / "tests/fixtures/reference_subset.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+            source_rows = [json.loads(line) for line in (ROOT / "tests/fixtures/reference_subset.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+            self.assertEqual(packaged_rows, source_rows)
+            self.assertEqual(len(packaged_rows), 18)
             self.assertEqual([str(path.relative_to(app / "tests")) for path in (app / "tests").rglob("*") if path.is_file()],
                              [str(Path("fixtures/reference_subset.jsonl"))])
             # Hook generation is read-only: decode its command and prove it pins bundled Python.
-            code = "import runpy; ns=runpy.run_path(" + repr(str(backend)) + ",run_name='native_contract'); print(ns['powershell_hook_command']('Stop'))"
+            code = "import json,runpy,sys; ns=runpy.run_path(" + repr(str(backend)) + ",run_name='native_contract'); print(json.dumps({'python':sys.executable,'command':ns['powershell_hook_command']('Stop')},ensure_ascii=False))"
             result = subprocess.run([str(app / "runtime/python.exe"), "-X", "utf8", "-c", code],
                                     env=env, capture_output=True, encoding="utf-8", timeout=30)
             self.assertEqual(result.returncode, 0, result.stderr)
-            encoded = result.stdout.strip().split()[-1]
+            hook_result = json.loads(result.stdout)
+            self.assertTrue(Path(hook_result["python"]).samefile(app / "runtime/python.exe"))
+            encoded = hook_result["command"].split()[-1]
             hook = base64.b64decode(encoded).decode("utf-16-le")
-            self.assertIn(resolved, hook)
+            self.assertIn("'" + hook_result["python"].replace("'", "''") + "'", hook)
             # An explicitly fake setup target verifies install/wrapper resolution with no writes
             # to real Codex registration. The real backend is never called by install in this test.
             backend.write_text("import json,sys\nprint(json.dumps({'python':sys.executable,'args':sys.argv[1:]},ensure_ascii=False))\n", encoding="utf-8")
