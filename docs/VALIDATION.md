@@ -28,6 +28,8 @@ Completed native checks:
   characters and spaces, argument forwarding and parsing all PowerShell entry points.
 - Windows panel: native Tk demo, pythonw panel/backend execution, queue/controller behavior,
   shutdown prevention of new children, notification preferences, and real Win32 tray add/update/notify/delete.
+  The demo window was also inspected at 1120 x 780: status labels, probe buttons, fresh-model/effort
+  inputs and Refresh/Doctor are visible. The demo exited normally and removed its temporary state.
 - Actual local Codex app-server `initialize` + `hooks/list`: succeeded, zero inference requests.
 - Actual local Codex SQLite + `build_snapshot`: 29 recent sessions read, no database errors;
   detector writes isolated in a temporary directory. Only counts were emitted in the evidence output.
@@ -39,6 +41,9 @@ Completed native checks:
   generated PowerShell hooks were executed with synthetic input and exited 0; the ledger
   recorded SessionStart, UserPromptSubmit, PreToolUse, Stop, and SessionEnd. The Stop check
   deliberately supplied a stale plugin path and confirmed the stable-copy fallback.
+  A separate real-entrypoint timing check took 0.750-0.813 seconds per event on this host,
+  below each retained manifest timeout (including SessionEnd's three-second limit); ledger events
+  confirmed execution. This does not guarantee timing on every machine or under lock contention.
 - Actual `uninstall.ps1 -KeepPath`: exit 0; parsed TOML confirmed the plugin was disabled
   and the ledger was retained. `uninstall.ps1 -KeepPath -Purge`: exit 0 and the ledger
   directory stayed absent. These checks made zero inference requests and did not change user PATH.

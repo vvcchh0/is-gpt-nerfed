@@ -234,7 +234,10 @@ class BackendPortabilityTests(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32", "Windows TOML path escaping")
     def test_setup_fallback_toml_escapes_unicode_hash_and_backslashes(self):
-        import tomllib
+        try:
+            import tomllib
+        except ModuleNotFoundError:  # Python 3.10 test dependency; never used at runtime
+            import tomli as tomllib
 
         with tempfile.TemporaryDirectory(prefix="nerfed TOML 中文 # ") as temp:
             base = Path(temp)

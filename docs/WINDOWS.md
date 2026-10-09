@@ -105,6 +105,9 @@ See the Chinese analysis for the statistical method and the distinction between 
 
 ## Development and packaging
 
+The Python 3.10 test suite also needs `python -m pip install tomli` for independent TOML
+parsing in the installation regression. Python 3.11+ includes `tomllib`; the app itself needs neither package.
+
 ```powershell
 python -X utf8 -m unittest discover -s tests -v
 python -X utf8 windows/app.py --smoke-test

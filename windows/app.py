@@ -367,6 +367,8 @@ class PanelApp:
         right = ttk.Frame(body)
         body.add(left, weight=1)
         body.add(right, weight=2)
+        # Reserve a useful session/status column while preserving room for the report.
+        self.root.after(120, lambda: self._position_session_pane(body))
 
         ttk.Label(left, text="Sessions and status", style="Section.TLabel").pack(anchor="w", pady=(0, 5))
         list_frame = ttk.Frame(left)
@@ -406,6 +408,9 @@ class PanelApp:
         ttk.Label(right, text="Selected session report", style="Section.TLabel").pack(anchor="w", pady=(0, 5))
         text_frame = ttk.Frame(right)
         text_frame.pack(fill="both", expand=True)
+        # Keep the report useful but leave vertical room for both action rows at normal window size.
+        text_frame.configure(height=320)
+        text_frame.pack_propagate(False)
         self.report = tk.Text(text_frame, wrap="word", state="disabled", font=("Consolas" if os.name == "nt" else "TkFixedFont", 9),
                               padx=8, pady=8, background="#fbfbfb", relief="solid", borderwidth=1)
         report_scroll = ttk.Scrollbar(text_frame, orient="vertical", command=self.report.yview)
@@ -421,14 +426,18 @@ class PanelApp:
         self.retry_button.pack(side="left", padx=(0, 5))
         self.fresh_button = ttk.Button(actions, text="Fresh probe", command=self._fresh_probe)
         self.fresh_button.pack(side="left", padx=(0, 10))
-        ttk.Label(actions, text="Model").pack(side="left")
+
+        fresh_options = ttk.Frame(right)
+        fresh_options.pack(fill="x", pady=(5, 0))
+        ttk.Label(fresh_options, text="Fresh model").grid(row=0, column=0, sticky="w", padx=(0, 5))
         self.model_var = tk.StringVar(value="")
-        self.model_entry = ttk.Entry(actions, textvariable=self.model_var, width=17)
-        self.model_entry.pack(side="left", padx=(4, 8))
-        ttk.Label(actions, text="Effort").pack(side="left")
+        self.model_entry = ttk.Entry(fresh_options, textvariable=self.model_var, width=18)
+        self.model_entry.grid(row=0, column=1, sticky="ew", padx=(0, 10))
+        ttk.Label(fresh_options, text="Effort").grid(row=0, column=2, sticky="w", padx=(0, 5))
         self.effort_var = tk.StringVar(value="")
-        self.effort_box = ttk.Combobox(actions, textvariable=self.effort_var, values=EFFORTS, width=10)
-        self.effort_box.pack(side="left", padx=(4, 0))
+        self.effort_box = ttk.Combobox(fresh_options, textvariable=self.effort_var, values=EFFORTS, width=12)
+        self.effort_box.grid(row=0, column=3, sticky="w")
+        fresh_options.columnconfigure(1, weight=1)
 
         footer = ttk.Frame(right)
         footer.pack(fill="x", pady=(8, 0))
@@ -443,6 +452,13 @@ class PanelApp:
             for widget in (self.apply_settings_button, self.probe_button, self.retry_button, self.fresh_button,
                            self.model_entry, self.effort_box):
                 widget.configure(state="disabled")
+
+    @staticmethod
+    def _position_session_pane(body: ttk.Panedwindow) -> None:
+        try:
+            body.sashpos(0, 350)
+        except tk.TclError:
+            pass
 
     def _write_report(self, text: str) -> None:
         self.report.configure(state="normal")
@@ -557,8 +573,16 @@ class PanelApp:
             return "SUSPICIOUS"
         if row.get("halted"):
             return "HALTED"
+        if row.get("unverified"):
+            return "UNVERIFIED"
+        if row.get("upgraded"):
+            return "UPGRADED"
         if row.get("due"):
             return "DUE"
+        if probe.get("verdict") == "MISMATCH" and probe.get("direction") == "upgrade":
+            return "UPGRADED"
+        if probe.get("status") == "failed" or probe.get("verdict") in ("INVALID", "FAILED"):
+            return "FAILED"
         return str(probe.get("verdict") or ("ACTIVE" if row.get("active") else "QUIET"))
 
     def _apply_snapshot(self, snapshot: dict[str, Any]) -> None:
@@ -591,12 +615,10 @@ class PanelApp:
         self.session_list.delete(0, "end")
         for row in rows:
             if row.get("kind") == "fresh":
-                model = (row.get("model") or "?") + (f" @ {row['effort']}" if row.get("effort") else "")
-                label = f"Fresh session  |  {model}  |  {self._row_status(row)}"
+                label = f"[FRESH {self._row_status(row)}] Fresh session"
             else:
                 title = row.get("title") or row.get("id") or "Session"
-                model = (row.get("model") or "?") + (f" @ {row['effort']}" if row.get("effort") else "")
-                label = f"{title}  |  {model}  |  {self._row_status(row)}"
+                label = f"[{self._row_status(row)}] {title}"
             self.session_list.insert("end", label)
         target = next((i for i, row in enumerate(rows) if (row.get("id") or "__fresh__") == self._selected_key), 0)
         if rows:
