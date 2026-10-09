@@ -1,0 +1,13 @@
+* text=auto
+*.py text eol=lf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.sh text eol=lf
+plugin/skills/is-gpt-nerfed/scripts/nerfed text eol=lf
+bin/nerfed text eol=lf
+*.json text eol=lf
+plugin/assets/modeltrace/unified_bank.json -text
+*.jsonl text eol=lf
+*.mjs text eol=lf
+*.png binary
+*.icns binary

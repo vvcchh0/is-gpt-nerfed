@@ -9,6 +9,8 @@ import sys
 import tempfile
 import time
 import unittest
+from pathlib import Path
+import urllib.request  # import before tests mock sys.platform as darwin on Windows
 from contextlib import redirect_stdout
 from unittest import mock
 
@@ -762,8 +764,11 @@ class SnapshotReportTests(unittest.TestCase):
         self.assertEqual(dgc.assess("gpt-6-astra", {"results": results, "used_outputs": 2}, [])["verdict"], "MISMATCH")
 
     def test_probes_identify_as_the_client_they_check_for(self):
-        self.assertEqual(dgc.default_originator("/Applications/ChatGPT.app/Contents/Resources/codex"), "Codex Desktop")
-        self.assertEqual(dgc.default_originator("/opt/homebrew/bin/codex"), "codex_cli_rs")
+        with mock.patch.object(dgc.sys, "platform", "darwin"):
+            self.assertEqual(dgc.default_originator("/Applications/ChatGPT.app/Contents/Resources/codex"), "Codex Desktop")
+            self.assertEqual(dgc.default_originator("/opt/homebrew/bin/codex"), "codex_cli_rs")
+        if os.name == "nt":
+            self.assertEqual(dgc.default_originator(r"C:\Users\test\AppData\Local\OpenAI\Codex\bin\0.162.0\codex.exe"), "Codex Desktop")
         self.assertEqual(dgc.resolve_originator({"probe_originator": "auto"}, "/opt/homebrew/bin/codex", {"originator": "Codex Desktop"}), "Codex Desktop")
         self.assertEqual(dgc.resolve_originator({"probe_originator": "my-client"}, "/opt/homebrew/bin/codex", {"originator": "Codex Desktop"}), "my-client")
         self.assertEqual(dgc.resolve_originator({"probe_originator": "auto"}, None, None, "override"), "override")
@@ -782,8 +787,17 @@ class SnapshotReportTests(unittest.TestCase):
         d = tempfile.mkdtemp(dir=TMP)
 
         def fake(name, version):
-            path = os.path.join(d, name, "codex")
-            os.makedirs(os.path.dirname(path))
+            folder = os.path.join(d, name)
+            os.makedirs(folder)
+            if os.name == "nt":
+                path = os.path.join(folder, "codex.cmd")
+                helper = os.path.join(folder, "version-script.py")
+                with open(helper, "w", encoding="utf-8") as f:
+                    f.write("import sys\nprint('codex-cli ' + sys.argv[1])\n")
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(f'@echo off\r\n"{sys.executable}" -X utf8 "{helper}" "{version}"\r\n')
+                return path
+            path = os.path.join(folder, "codex")
             with open(path, "w") as f:
                 f.write(f"#!/bin/sh\necho 'codex-cli {version}'\n")
             os.chmod(path, 0o755)
@@ -791,14 +805,15 @@ class SnapshotReportTests(unittest.TestCase):
 
         old, app = fake("brew", "0.150.0"), fake("app", "0.158.0-alpha.2.1")
         dgc._CODEX_VERSIONS.clear()
-        with mock.patch.object(dgc, "APP_CODEX_BINS", [app]), mock.patch.dict(os.environ, {"PATH": os.path.dirname(old)}):
+        with mock.patch.object(dgc.platform, "app_codex_bins", return_value=[app]), mock.patch.dict(os.environ, {"PATH": os.path.dirname(old)}):
             self.assertEqual(dgc.codex_candidates(), [old, app])
             self.assertEqual(dgc.codex_bin({"codex_bin": None}), app)
             self.assertEqual(dgc.codex_bin({"codex_bin": old}), old, "an explicit choice still wins")
-        with mock.patch.object(dgc, "APP_CODEX_BINS", []), mock.patch.dict(os.environ, {"PATH": os.path.dirname(old)}):
+        with mock.patch.object(dgc.platform, "app_codex_bins", return_value=[]), mock.patch.dict(os.environ, {"PATH": os.path.dirname(old)}):
             self.assertEqual(dgc.codex_bin({"codex_bin": None}), old)
         self.assertEqual(dgc.codex_version(app), "0.158.0-alpha.2.1")
-        self.assertIn("/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex", dgc.APP_CODEX_BINS)
+        self.assertIn("/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex",
+                      [path.replace("\\", "/") for path in dgc.APP_CODEX_BINS])
         key = dgc.codex_version_key
         self.assertGreater(key("0.158.0"), key("0.158.0-alpha.2.1"))
         self.assertGreater(key("0.158.0-alpha.10"), key("0.158.0-alpha.9.2"))
@@ -810,14 +825,15 @@ class SnapshotReportTests(unittest.TestCase):
         self.assertGreater(dgc.version_tuple("0.10.0"), dgc.version_tuple("0.9.9"))
         self.assertEqual(dgc.version_tuple(None), (0,))
         dgc.write_json(dgc.UPDATE_PATH, {"checked": dgc.iso(), "latest": "99.0.0", "url": "https://example.test/rel", "error": None})
-        u = dgc.update_status({"check_updates": True})
-        self.assertTrue(u["available"])
-        self.assertEqual((u["latest"], u["url"], u["current"]), ("99.0.0", "https://example.test/rel", dgc.VERSION))
-        dgc.write_json(dgc.UPDATE_PATH, {"checked": dgc.iso(), "latest": dgc.VERSION, "error": "HTTP 404"})
-        u = dgc.update_status({"check_updates": False})
-        self.assertFalse(u["available"])
-        self.assertFalse(u["enabled"])
-        snap = json.loads(run_cli(["snapshot", "--json"])[1])
+        with mock.patch.object(dgc.sys, "platform", "darwin"):
+            u = dgc.update_status({"check_updates": True})
+            self.assertTrue(u["available"])
+            self.assertEqual((u["latest"], u["url"], u["current"]), ("99.0.0", "https://example.test/rel", dgc.VERSION))
+            dgc.write_json(dgc.UPDATE_PATH, {"checked": dgc.iso(), "latest": dgc.VERSION, "error": "HTTP 404"})
+            u = dgc.update_status({"check_updates": False})
+            self.assertFalse(u["available"])
+            self.assertFalse(u["enabled"])
+            snap = json.loads(run_cli(["snapshot", "--json"])[1])
         self.assertIn("update", snap)
         self.assertFalse(snap["update"]["available"])
         os.remove(dgc.UPDATE_PATH)
@@ -853,9 +869,13 @@ class SnapshotReportTests(unittest.TestCase):
         with open(zip_path + ".sha256", "w") as f:
             f.write(hashlib.sha256(open(zip_path, "rb").read()).hexdigest() + "  IsGPTNerfed-99.0.0.zip\n")
         dgc.write_json(dgc.UPDATE_PATH, {"checked": dgc.iso(), "latest": "99.0.0", "url": "https://example.test/rel",
-                                         "asset_url": "file://" + zip_path, "sha256_url": "file://" + zip_path + ".sha256", "error": None})
+                                         "asset_url": Path(zip_path).as_uri(), "sha256_url": Path(zip_path + ".sha256").as_uri(), "error": None})
         backups = os.path.join(base, "trash"); os.makedirs(backups)
-        code, out = run_cli(["update-install", "--app", installed, "--backup-dir", backups, "--no-launch"])
+        with mock.patch.object(dgc.sys, "platform", "darwin"):
+            # Windows lacks ditto/xattr; exercise the same macOS update code through its ZIP fallback.
+            with mock.patch("shutil.which", return_value=None), \
+                    mock.patch("subprocess.run", return_value=mock.Mock(returncode=0)):
+                code, out = run_cli(["update-install", "--app", installed, "--backup-dir", backups, "--no-launch"])
         self.assertEqual(code, 0, out)
         with open(os.path.join(installed, "Contents", "Info.plist"), "rb") as f:
             self.assertEqual(plistlib.load(f)["CFBundleShortVersionString"], "99.0.0", "the new bundle sits where the old one was")
@@ -865,7 +885,10 @@ class SnapshotReportTests(unittest.TestCase):
         with open(zip_path, "ab") as f:
             f.write(b"x")
         fake_app(installed, "0.0.1")
-        code, out = run_cli(["update-install", "--app", installed, "--backup-dir", backups, "--no-launch", "--force"])
+        with mock.patch.object(dgc.sys, "platform", "darwin"):
+            with mock.patch("shutil.which", return_value=None), \
+                    mock.patch("subprocess.run", return_value=mock.Mock(returncode=0)):
+                code, out = run_cli(["update-install", "--app", installed, "--backup-dir", backups, "--no-launch", "--force"])
         self.assertNotEqual(code, 0)
         self.assertIn("sha256 mismatch", dgc.read_json(dgc.UPDATE_PATH)["status"])
         with open(os.path.join(installed, "Contents", "Info.plist"), "rb") as f:

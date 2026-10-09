@@ -1,3 +1,12 @@
+> **Windows 移植版（`windows` 分支）：** 支持原生 Windows 10/11，提供 PowerShell 安装器、
+> Python/Tkinter 桌面面板、系统托盘及共享检测后端。需要带 Tcl/Tk 的 Python 3.10+。
+> 运行 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1`，然后 `.\launch.cmd`。
+> 详见 [Windows 使用说明](docs/WINDOWS.md)、[源码与原理分析](docs/ANALYSIS.zh-CN.md)、
+> [验收证据](docs/VALIDATION.md)。原作者为
+> [kiyoakii/is-gpt-nerfed](https://github.com/kiyoakii/is-gpt-nerfed)，MIT；归属见 [NOTICE.md](NOTICE.md)。
+> 下方保留原 macOS 文档。数字指纹是库内统计归因信号，主动探测使用联网 Codex 推理，
+> 具体检测边界见 Windows 使用说明。
+
 <p align="center"><img src="docs/social-preview.png" width="880" alt="is-gpt-nerfed：检测 Codex 模型是否缩水"></p>
 
 [English](README.md) · 简体中文

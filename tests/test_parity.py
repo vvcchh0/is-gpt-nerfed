@@ -4,6 +4,7 @@ import importlib.machinery
 import importlib.util
 import json
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import tempfile
@@ -70,12 +71,12 @@ class ParityTests(unittest.TestCase):
         cases.append([{"text": "I choose: 5, 17, 300 and then twelve more: 44 44 44 " + " ".join(str(1 + (i * 37) % 355) for i in range(120)), "expected_count": 100}])
         tmp = tempfile.mkdtemp(prefix="dgc-parity-")
         runner = os.path.join(tmp, "runner.mjs")
-        with open(runner, "w") as f:
-            f.write(RUNNER % json.dumps("file://" + JS_CORE))
+        with open(runner, "w", encoding="utf-8") as f:
+            f.write(RUNNER % json.dumps(Path(JS_CORE).as_uri()))
         cases_path = os.path.join(tmp, "cases.json")
-        with open(cases_path, "w") as f:
+        with open(cases_path, "w", encoding="utf-8") as f:
             json.dump(cases, f)
-        js = json.loads(subprocess.check_output(["node", runner, BANK, cases_path], text=True))
+        js = json.loads(subprocess.check_output(["node", runner, BANK, cases_path], text=True, encoding="utf-8"))
         for i, (case, expected) in enumerate(zip(cases, js)):
             got = core.analyze_global_outputs(case, bank)
             self.assertEqual(got["prediction"], expected["prediction"], f"case {i}")

@@ -1,5 +1,9 @@
 # Development notes
 
+Windows branch: [native install and development](WINDOWS.md), [source analysis](ANALYSIS.zh-CN.md),
+[port design](adr/0001-windows-port.md), [validation evidence](VALIDATION.md), and
+[original author attribution](../NOTICE.md). The platform-specific notes below describe upstream macOS.
+
 ## Layout
 
 | path | |

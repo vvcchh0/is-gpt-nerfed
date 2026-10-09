@@ -1,0 +1,32 @@
+name: Cross-platform backend and Windows panel
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            python: '3.10'
+          - os: windows-latest
+            python: '3.11'
+          - os: ubuntu-latest
+            python: '3.11'
+          - os: macos-latest
+            python: '3.11'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -X utf8 -m unittest discover -s tests -v
+      - if: runner.os == 'Windows'
+        run: python -X utf8 windows/app.py --smoke-test

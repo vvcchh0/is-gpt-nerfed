@@ -1,3 +1,13 @@
+> **Windows port (`windows` branch):** Native Windows 10/11 support with PowerShell installation,
+> a Python/Tkinter desktop panel, system tray, and shared Codex detection backend.
+> Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1`, then `.\launch.cmd`.
+> Python 3.10+ with Tcl/Tk is required. See [Windows guide](docs/WINDOWS.md),
+> [source analysis (中文)](docs/ANALYSIS.zh-CN.md), and [validation](docs/VALIDATION.md).
+> Derived from [kiyoakii/is-gpt-nerfed](https://github.com/kiyoakii/is-gpt-nerfed), MIT;
+> original author and dependency credits are preserved in [NOTICE.md](NOTICE.md).
+> The original macOS documentation follows. Fingerprints are closed-set statistical signals,
+> and active probes use normal online Codex inference; see the Windows guide for limitations.
+
 <p align="center"><img src="docs/social-preview.png" width="880" alt="is-gpt-nerfed: shrinkflation detector for Codex"></p>
 
 English · [简体中文](README.zh-CN.md)

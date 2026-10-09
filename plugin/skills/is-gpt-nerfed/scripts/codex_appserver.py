@@ -18,6 +18,8 @@ import threading
 import time
 import uuid
 
+import platform_support
+
 CLIENT_INFO = {"name": "is-gpt-nerfed", "version": "0.5.3"}
 FINISHED_TURN = ("completed", "interrupted", "failed")
 MESSAGE_ITEMS = ("userMessage", "agentMessage", "reasoning", "hookPrompt")
@@ -61,11 +63,13 @@ class AppServer:
             environ["CODEX_INTERNAL_ORIGINATOR_OVERRIDE"] = originator
         # Our private app-server must not fire anyone's hooks or desktop notifications while it probes.
         # (`hooks_enabled` is only used to inspect/trust hook definitions; no turn ever runs in that mode.)
-        args = [codex_bin, "app-server", "--stdio", "-c", "notify=[]"]
+        command_args = ["app-server", "--stdio", "-c", "notify=[]"]
         if not hooks_enabled:
-            args += ["-c", "features.hooks=false"]
+            command_args += ["-c", "features.hooks=false"]
+        args = platform_support.command_argv(codex_bin, command_args)
         self.proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                     stderr=subprocess.DEVNULL, env=environ, text=True, bufsize=1)
+                                     stderr=subprocess.DEVNULL, env=environ, text=True, encoding="utf-8", errors="replace",
+                                     bufsize=1, **platform_support.subprocess_options(hidden=True))
         self._write_lock = threading.Lock()
         self._cond = threading.Condition()
         self._next_id = 0
@@ -173,6 +177,11 @@ class AppServer:
                 self.proc.wait(timeout=3)
             except Exception:
                 pass
+        self._reader.join(timeout=1)
+        try:
+            self.proc.stdout.close()
+        except Exception:
+            pass
 
 
 # -- thread helpers -----------------------------------------------------------------------------
