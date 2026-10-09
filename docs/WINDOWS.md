@@ -1,19 +1,29 @@
 # Windows port
 
-Windows 10/11 desktop, Windows PowerShell 5.1 with the OS's .NET Framework WPF, Python 3.10+
-(recommended: 3.11+), and a signed-in Codex desktop app or CLI with plugin hooks and the
-experimental app-server protocol are required. The default panel is native WPF; Tcl/Tk is
-only required for the optional legacy panel. No .NET SDK, pip packages, administrator privileges,
-WSL or Git Bash are needed at runtime.
+The compiled portable release targets Windows 10/11 **x64**, .NET Framework 4.8 and a signed-in
+Codex desktop app or CLI with plugin hooks and the experimental app-server protocol. It contains
+`IsGPTNerfed.exe`, `IsGPTNerfed.Panel.dll` with embedded UI resources, and a private Python runtime.
+Ordinary GUI startup needs no external Python, compiler, PowerShell host, pip packages, WSL or
+administrator privileges. Windows PowerShell 5.1 is still used by installation/CLI helpers and hooks.
+
+Source-mode development needs Python 3.10+ (recommended: 3.11+) and Windows PowerShell 5.1/WPF.
+Tcl/Tk is required only for the optional legacy panel; it is not in the bundled Python runtime.
 
 Original author and licenses: [NOTICE.md](../NOTICE.md). 中文源码分析：[ANALYSIS.zh-CN.md](ANALYSIS.zh-CN.md).
 Interaction order: [中文操作指南](INTERACTION.zh-CN.md).
-Design: [ADR 0001](adr/0001-windows-port.md), [native UI decision](adr/0002-native-windows-ui.md).
+Design: [ADR 0001](adr/0001-windows-port.md), [native UI decision](adr/0002-native-windows-ui.md),
+[compiled distribution](adr/0003-compiled-windows-distribution.md).
 Validation evidence: [VALIDATION.md](VALIDATION.md).
 
 ## Install and open
 
-Extract or clone the `windows` branch, then run PowerShell from its root:
+For normal use, download the **win-x64 ZIP** from the
+[Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.3),
+extract the whole directory, and double-click `IsGPTNerfed.exe`. Keep the DLL, `runtime/` and
+`plugin/` alongside it. For first installation run `install.ps1` in that directory, review the
+hook commands and trust them, then restart Codex. Installation and probing remain explicit actions.
+
+The source package or a clone is the developer option. From its root:
 
 ```powershell
 git clone --branch windows https://github.com/vvcchh0/is-gpt-nerfed.git if-gpt-nerfed-main
@@ -32,10 +42,11 @@ Restart Codex after installation or reinstalling so it reloads the definitions.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -TrustHooks -AddToPath -Launch -CodexBin 'C:\path with spaces\codex.exe'
 ```
 
-`NERFED_PYTHON` can point to a specific `python.exe`. The installer resolves a real interpreter,
-skipping Store aliases. Hooks remember that interpreter, so reinstall if it is moved or removed.
-The previous Tk app remains available with `launch.cmd --legacy-tk` or directly with
-`python -X utf8 windows/app.py`.
+The portable app and helpers prefer their local `runtime/python.exe`. In source mode,
+`NERFED_PYTHON` can point to a specific `python.exe`; discovery skips Store aliases. Hooks remember
+the selected interpreter, so keep the extracted directory and reinstall if it is moved or removed.
+The previous Tk app remains available in the source package with `launch.cmd --legacy-tk` or
+`python -X utf8 windows/app.py`, using an external Tcl/Tk-enabled Python.
 Native `codex.exe` and npm `codex.cmd` shims are supported. The `.cmd` bridge rejects embedded
 quotes, `%`, `!` and newlines rather than letting cmd.exe reinterpret them; use a native executable
 if your shim path or arguments contain these characters.
@@ -56,7 +67,7 @@ use Quit to exit. If the tray is unavailable, the window remains usable. Demo us
 
 ```powershell
 .\launch.cmd --demo
-.\launch.cmd --legacy-tk --demo
+.\launch.cmd --legacy-tk --demo  # source package with an external Tcl/Tk-enabled Python
 .\bin\nerfed.cmd --version
 .\bin\nerfed.cmd doctor --live
 .\bin\nerfed.cmd selftest
@@ -98,11 +109,11 @@ the ledger. Restart Codex to unload hooks.
 
 ## Limits and privacy
 
-The macOS SwiftUI app, DMG installer and self-updater remain upstream features. Windows uses a
-native WPF desktop/tray panel, an optional legacy Tk panel, and a Python-dependent source ZIP.
+The macOS SwiftUI app, DMG installer and self-updater remain upstream features. Windows provides a
+compiled EXE/DLL portable ZIP with a private runtime, plus a separate source ZIP and optional Tk panel.
 The original images and upstream attribution are retained. Windows does not download or install
 macOS releases; update by pulling `windows` and rerunning the installer. There is no automatic startup
-registration, signed standalone EXE, or Windows Notification Center toast integration in this version.
+registration, signed executable, MSI installer or Windows Notification Center toast integration in this version.
 Tray balloon delivery depends on Windows notification settings; the ledger remains the authoritative record.
 Without the panel running, notification events remain in the local log and session hook messages.
 
@@ -117,6 +128,24 @@ can resemble an enrolled model; prompt, reasoning effort, serving changes and co
 distribution. A log records the requested model, not an independently verified serving identity.
 See the Chinese analysis for the statistical method and the distinction between signals and conclusions.
 
+## Doctor and historical permission errors
+
+Doctor distinguishes hard failed checks from warnings. A historical `hook crashed: PermissionError`
+entry does not by itself establish a current installation failure. Later hook activity is useful
+context, not proof that the original cause has been fixed. Old errors remain in `errors.log`; this
+release does not erase them to make diagnostics appear clean.
+
+The old logger stored only an exception representation, so a record without filename or traceback
+cannot identify the failed resource. New hook diagnostics record safe event/error/file/frame
+metadata, without hook input, session text or credentials. If it recurs, use those fields to locate
+the affected file before changing permissions. Hooks remain fail-open so an internal monitor error
+does not block the user's Codex turn.
+
+Windows may briefly deny atomic replacement while another process holds the destination open.
+The shared JSON writer now retries that class of failure within a short budget and preserves the
+old JSON on persistent failure. This addresses a reproduced failure mode; it does not retroactively
+prove the cause of any old log entry. No blanket administrator/ACL change is part of the fix.
+
 ## Development and packaging
 
 The Python 3.10 test suite also needs `python -m pip install tomli` for independent TOML
@@ -129,5 +158,7 @@ python -X utf8 windows/app.py --smoke-test  # optional legacy panel
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\build-windows.ps1
 ```
 
-The build produces a source ZIP plus a SHA-256 file from the committed HEAD, with the licenses,
-plugin, GUI and installers. Python is a prerequisite, not embedded in that ZIP.
+The release build produces separate source and win-x64 portable ZIPs plus SHA-256 files from clean
+committed HEAD. The portable archive contains compiled EXE/DLL resources, the plugin, helpers,
+licenses and pinned CPython runtime; the source archive retains the auditable originals. Downloads
+are build-time only and must match the fixed official runtime hash. See ADR 0003 for provenance.

@@ -1,5 +1,17 @@
 # Changelog
 
+## Windows 0.5.3-port.3 — 2026-10-09
+
+- Add a compiled WPF GUI EXE and panel DLL with embedded resources, plus an x64 portable ZIP
+  bundling a pinned, hash-verified official CPython runtime. Keep a separate source release and
+  source-mode/Tk recovery paths. See [ADR 0003](docs/adr/0003-compiled-windows-distribution.md).
+- Improve Windows JSON-write reliability for reproduced short-lived target contention, with
+  bounded retries and preservation of the prior file on persistent failure.
+- Record safe hook exception location/error metadata and distinguish doctor warnings from failed
+  checks. Historical errors remain visible and are not presented as a fully healthy diagnosis.
+- Preserve Chinese interpreter paths and CLI/install output under legacy Windows code pages;
+  compiled launchers start the EXE directly and return diagnostic exit codes.
+
 ## Windows 0.5.3-port.2 — 2026-10-09
 
 - Replace the default Tk presentation with a native WPF panel inspired by upstream's screenshots

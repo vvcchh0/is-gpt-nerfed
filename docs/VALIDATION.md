@@ -1,5 +1,67 @@
 # Windows validation record
 
+## Compiled distribution and hook reliability — 0.5.3-port.3, 2026-10-09
+
+Scope: [ADR 0003](adr/0003-compiled-windows-distribution.md). Both implementation tracks
+used **GPT-6.1 Sol, xhigh** without redelegation. The parent reviewed the final source,
+compiled synthetic screenshot, unchanged ModelTrace digest and complete regression results.
+
+### Local acceptance
+
+`python -X utf8 -m unittest discover -s tests -v`: **94 tests passed in 95.085 seconds**,
+exit 0 on Windows/Python 3.11.2. The portable development archive was rebuilt from the final
+implementation before this run. It is a test snapshot, not a publishable release artifact.
+
+New coverage includes:
+
+- Four compiled frontend/package tests: actual x64 GUI PE metadata, DLL version `0.5.3.3`,
+  embedded XAML/three faces, smoke and interaction self-test, synthetic render, direct CMD
+  waiting/exit codes, and app-local Python with no Python on PATH or `NERFED_PYTHON` override.
+  The compiled app is exercised without `windows/` or `macos/` source resources.
+- The portable interpreter's real CLI/synthetic snapshot and hook-command generation;
+  an explicitly fake setup backend verifies installer and helper interpreter/argument routing
+  in a path with Chinese characters and spaces. No real account is used.
+- Four launcher tests, including a forced CP936 caller. Chinese JSON values remain correct
+  inside the PowerShell pipeline and the original console encoding is restored after the call.
+  This catches decoding corruption that a byte round trip alone can hide.
+- Thirteen reliability/diagnostic tests. A real `CreateFileW` handle without delete sharing
+  reproduces `PermissionError`/WinError 5 on replacement; release after 25 ms allows a later
+  attempt to succeed. Persistent contention and a read-only target retain the old JSON and
+  clean the temporary file. The separate persistent-contention observation failed in 156 ms.
+  Retry waits are capped at 150 ms per write and 250 ms cumulatively per hook; unrelated and
+  non-Windows failures are not retried. These are wait budgets, not a whole-hook timing guarantee.
+- Unique temporary files under same-process concurrent writes, serialization-failure cleanup,
+  fail-open hook handling, safe error metadata without input/locals/exception text, and honest
+  doctor warning/failure summaries. Historical errors remain visible; later activity is not
+  interpreted as proof of recovery.
+
+The observed user log contained one old error at `2026-10-09T11:18:33Z` and subsequent hook
+activity. Its old exception representation lacks the failed path and stack, so this work does
+**not** claim the reproduced sharing conflict was that historical error's original cause.
+No log was erased, ACL changed, or existing process stopped to hide the symptom.
+
+`git diff --check` passed. The bank SHA-256 is still
+`1c2cb74d372f9f0f30d0dabbb7b7a838660d2f769a88d0c8489e4c662e088c21`.
+Prompts, scoring thresholds and ledger formats remain unchanged.
+
+### Formal distribution evidence
+
+Formal artifacts are rebuilt from clean committed HEAD with `tools/build-windows.ps1`.
+The [port.3 release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.3)
+records the exact commit, source/portable checksums, four-platform CI and extracted-archive
+acceptance results. Its build manifest includes each distributed file's SHA-256, source state,
+the official CPython 3.13.16 archive URL/digest and retained `runtime/LICENSE.txt`.
+Development archives marked dirty are not used as release assets.
+
+### Limits
+
+Checks use isolated homes and synthetic/fake inference. The user's installed copy, settings,
+hook trust and running Tk/Codex processes are not updated by this validation. No real fingerprint
+inference or current-account attribution calibration is performed. Physical monitor DPI changes,
+ARM64, accessibility and server-side cancellation remain uncertified. The portable x64 EXE/DLL
+is unsigned, requires .NET Framework 4.8, and is not an MSI or auto-start registration.
+Python modules intentionally remain auditable source beside their private interpreter.
+
 ## Native WPF update — 0.5.3-port.2, 2026-10-09
 
 Scope: [ADR 0002](adr/0002-native-windows-ui.md), based on upstream screenshots and macOS

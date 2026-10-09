@@ -1,11 +1,12 @@
 > **Windows port (`windows` branch):** Native Windows 10/11 support with PowerShell installation,
-> a native WPF desktop panel, system tray, and shared Python Codex detection backend.
-> Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1`, then `.\launch.cmd`.
-> Python 3.10+ and Windows PowerShell 5.1/.NET Framework are required. The old Tk panel remains
+> a compiled WPF `IsGPTNerfed.exe` + panel DLL, system tray, and shared Python Codex detection backend.
+> Download the **win-x64 portable ZIP**, extract it and run `IsGPTNerfed.exe`; it includes a private Python runtime.
+> Windows 10/11 x64 and .NET Framework 4.8 are required. First plugin installation uses `install.ps1`.
+> The separate source package needs Python 3.10+ and Windows PowerShell 5.1; its Tk fallback remains
 > available with `launch.cmd --legacy-tk`. See [Windows guide](docs/WINDOWS.md),
 > [interaction order (中文)](docs/INTERACTION.zh-CN.md), [source analysis (中文)](docs/ANALYSIS.zh-CN.md),
 > and [validation](docs/VALIDATION.md).
-> Download the source ZIP and checksum from the [Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.2).
+> Download portable/source ZIPs and checksums from the [Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.3).
 > Derived from [kiyoakii/is-gpt-nerfed](https://github.com/kiyoakii/is-gpt-nerfed), MIT;
 > original author and dependency credits are preserved in [NOTICE.md](NOTICE.md).
 > The original macOS documentation follows. Fingerprints are closed-set statistical signals,

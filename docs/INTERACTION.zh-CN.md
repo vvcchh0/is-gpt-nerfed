@@ -19,7 +19,8 @@
 
 ## 推荐顺序：先手动，再决定是否自动
 
-1. **启动和诊断。** 运行 `launch.cmd`，查看 hooks 是否已信任、Codex 是否加载插件。
+1. **启动和诊断。** 发行版双击 `IsGPTNerfed.exe`；源码模式运行 `launch.cmd`。
+   查看 hooks 是否已信任、Codex 是否加载插件。
    有异常时点“诊断”，按输出修复。首次安装／信任后需要重启 Codex。
 2. **设置检测方式。** 进入“设置”，先把“每个活跃会话”和“独立新会话检测”都设为“手动”，
    “会话到期时”选“仅提醒”，“每次检测的样本数”建议先保留“3 份”，点“保存设置”。这不取消已发出的推理。
@@ -40,7 +41,7 @@
 
 ## 原截图中各控件的含义
 
-旧 Tk 面板可通过 `launch.cmd --legacy-tk` 打开，用于兼容回退。
+源码包中的旧 Tk 面板可通过 `launch.cmd --legacy-tk` 打开，需要另装带 Tcl/Tk 的 Python。
 
 | 原控件 | 操作与含义 |
 | --- | --- |
@@ -97,7 +98,10 @@
 已经发出的服务端推理不能仅凭窗口关闭就假定已取消。
 
 更新后重新运行 `launch.cmd` 才会使用新前端；已经打开的旧 Tk 窗口不会自动换成 WPF。
-本次界面升级不要求重置历史或重新信任未改变的 hooks。不要同时开两套正式面板以免重复运行调度器。
+编译便携版应从新解压目录运行 `IsGPTNerfed.exe`，并保留同目录 DLL、运行时和插件文件。
+若安装时使用的运行时路径改变，需要从新目录重新安装并检查 hooks 信任。
+仅替换前端且 hooks 命令未改变时，可保留已有信任；重装生成的命令改变时，按 Codex 提示重新审阅。
+不需要重置历史。不要同时开两套正式面板以免重复运行调度器。
 
 ## 参考原作
 
@@ -107,3 +111,4 @@
 [Store.swift](../macos/Sources/IsGPTNerfed/Store.swift)、
 [SettingsView.swift](../macos/Sources/IsGPTNerfed/SettingsView.swift)。
 Windows 的框架取舍与验收标准见 [ADR 0002](adr/0002-native-windows-ui.md)。
+编译发布结构与运行时来源见 [ADR 0003](adr/0003-compiled-windows-distribution.md)。

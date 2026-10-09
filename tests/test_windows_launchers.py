@@ -47,7 +47,7 @@ class WindowsLauncherTests(unittest.TestCase):
 
     def test_powershell_entrypoints_parse(self):
         files = [ROOT / name for name in ("install.ps1", "uninstall.ps1", "launch.ps1",
-                                          "windows/native.ps1", "bin/nerfed.ps1", "tools/windows-runtime.ps1", "tools/build-windows.ps1")]
+                                          "windows/native.ps1", "bin/nerfed.ps1", "tools/windows-runtime.ps1", "tools/compile-windows.ps1", "tools/build-windows.ps1")]
         literal = ",".join("'" + str(p).replace("'", "''") + "'" for p in files)
         code = (
             "$bad=0; foreach($p in @(" + literal + ")) {"
@@ -58,6 +58,39 @@ class WindowsLauncherTests(unittest.TestCase):
         proc = subprocess.run(["powershell.exe", "-NoProfile", "-Command", code],
                               capture_output=True, encoding="utf-8", timeout=30)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+    def test_cp936_callers_receive_unicode_and_encoding_is_restored(self):
+        with tempfile.TemporaryDirectory(prefix="nerfed-codepage-") as temp:
+            checkout = Path(temp) / "中文 wrapper with spaces"
+            (checkout / "tools").mkdir(parents=True)
+            (checkout / "bin").mkdir()
+            scripts = checkout / "plugin/skills/is-gpt-nerfed/scripts"
+            scripts.mkdir(parents=True)
+            for relative in ("bin/nerfed.ps1", "tools/windows-runtime.ps1", "install.ps1"):
+                shutil.copy2(ROOT / relative, checkout / relative)
+            (scripts / "nerfed").write_text(
+                "import json,sys\nprint(json.dumps({'text':'中文结果','args':sys.argv[1:]},ensure_ascii=False))\n",
+                encoding="utf-8",
+            )
+            env = {**os.environ, "NERFED_PYTHON": sys.executable}
+            for relative, arguments in (("bin/nerfed.ps1", "config show"), ("install.ps1", "-NoTrust")):
+                target = str(checkout / relative).replace("'", "''")
+                code = (
+                    "[Console]::OutputEncoding=[Text.Encoding]::GetEncoding(936); "
+                    "$lines=@(& '" + target + "' " + arguments + "); "
+                    "$record=($lines|Where-Object {$_.StartsWith('{')})|ConvertFrom-Json; "
+                    "$restored=[Console]::OutputEncoding.CodePage; "
+                    "[Console]::OutputEncoding=New-Object Text.UTF8Encoding($false); "
+                    "@{text=$record.text;restored=$restored;args=$record.args}|ConvertTo-Json -Compress"
+                )
+                result = subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", code],
+                                        env=env, capture_output=True, encoding="utf-8", timeout=30)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                record = json.loads(next(line for line in result.stdout.splitlines() if line.startswith("{")))
+                self.assertEqual(record["text"], "中文结果")
+                self.assertEqual(record["restored"], 936)
+                if relative == "install.ps1":
+                    self.assertEqual(record["args"], ["setup", "--no-trust"])
 
     def test_default_native_and_explicit_legacy_smoke(self):
         with tempfile.TemporaryDirectory(prefix="nerfed-launch-ui-") as temp:

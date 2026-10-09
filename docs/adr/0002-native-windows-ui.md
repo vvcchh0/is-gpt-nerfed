@@ -6,6 +6,9 @@ ADR 0001's detector, installation, attribution and shared-data decisions remain 
 Source: the user's Windows-panel screenshot and request for concrete interaction instructions and
 a UI reconstruction based on upstream screenshots/macOS source, implemented by GPT-6.1 Sol at xhigh.
 
+2026-10-09: [ADR 0003](0003-compiled-windows-distribution.md) supersedes source-only release packaging
+with a compiled EXE/DLL and private Python runtime; this UI design remains in effect.
+
 ## Context and evidence
 
 The first Tk port proves backend compatibility, but exposes a long plain-text report and hides

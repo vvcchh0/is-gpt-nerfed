@@ -1,5 +1,5 @@
 // Native Windows presentation only. Detection, scoring and persistence belong to nerfed.
-// Compiled by Windows PowerShell 5.1 against the inbox .NET Framework, without an SDK.
+// Compiled ahead of time for releases, or by the optional PowerShell source entry point.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -210,7 +210,7 @@ namespace Nerfed {
             transport = new BackendTransport(python, root, demo);
         }
         public static int Run(string python, string root, bool demo, bool smoke, bool selfTest, string renderPath, string page, int width, double scale) {
-            if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) throw new InvalidOperationException("WPF requires Windows PowerShell -STA.");
+            if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) throw new InvalidOperationException("WPF requires an STA entry thread.");
             if (selfTest) TransportContracts.Run(python);
             var panel = new NativePanel(python, root, demo, smoke, selfTest, renderPath, page, width, scale);
             var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
@@ -230,9 +230,12 @@ namespace Nerfed {
         static Border Card(UIElement child) { return new Border { Background = Color("#F3F4F5"), CornerRadius = new CornerRadius(11), Padding = new Thickness(12, 10, 12, 10), Margin = new Thickness(0, 0, 0, 8), Child = child }; }
         void BuildWindow() {
             window = new Window { Title = "is-gpt-nerfed", Width = 520, Height = Math.Min(950, SystemParameters.WorkArea.Height * .92), MinWidth = 380, MinHeight = 560, Background = Brushes.White, WindowStartupLocation = WindowStartupLocation.CenterScreen, UseLayoutRounding = true, SnapsToDevicePixels = true };
-            var resources = new ResourceDictionary { Source = new Uri(System.IO.Path.Combine(root, "windows", "native.xaml"), UriKind.Absolute) };
+            ResourceDictionary resources;
+            using (Stream resource = typeof(NativePanel).Assembly.GetManifestResourceStream("Nerfed.Native.xaml")) {
+                resources = resource == null ? new ResourceDictionary { Source = new Uri(System.IO.Path.Combine(root, "windows", "native.xaml"), UriKind.Absolute) } : (ResourceDictionary)System.Windows.Markup.XamlReader.Load(resource);
+            }
             window.Resources.MergedDictionaries.Add(resources);
-            try { window.Icon = BitmapFrame.Create(new Uri(FacePath("ok"))); } catch { }
+            try { window.Icon = FaceImage("ok"); } catch { }
             surface = new Grid { Background = Brushes.White, Margin = new Thickness(18, 10, 18, 10) };
             surface.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             surface.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
@@ -271,6 +274,12 @@ namespace Nerfed {
             if (!offline) timer.Start();
         }
         string FacePath(string state) { return System.IO.Path.Combine(root, "macos", "Resources", "face-" + state + ".png"); }
+        Stream FaceStream(string state) { return typeof(NativePanel).Assembly.GetManifestResourceStream("Nerfed.face-" + state + ".png") ?? File.OpenRead(FacePath(state)); }
+        BitmapImage FaceImage(string state) {
+            using (Stream stream = FaceStream(state)) {
+                var image = new BitmapImage(); image.BeginInit(); image.CacheOption = BitmapCacheOption.OnLoad; image.StreamSource = stream; image.EndInit(); image.Freeze(); return image;
+            }
+        }
         static string Ago(string value) {
             if (String.IsNullOrEmpty(value)) return "";
             if (value == "just now") return "刚刚";
@@ -319,7 +328,7 @@ namespace Nerfed {
             header.Children.Clear();
             object overall = Json.Get(snapshot, "overall"); string state = Json.S(overall, "status");
             var image = new Image { Width = 62, Height = 62, Margin = new Thickness(0, 1, 0, 7), HorizontalAlignment = HorizontalAlignment.Center };
-            try { image.Source = new BitmapImage(new Uri(FacePath(state == "alert" ? "alert" : state == "warn" ? "warn" : "ok"))); header.Children.Add(image); } catch { header.Children.Add(Text("(•ᴗ•)", 28, Ink, true)); }
+            try { image.Source = FaceImage(state == "alert" ? "alert" : state == "warn" ? "warn" : "ok"); header.Children.Add(image); } catch { header.Children.Add(Text("(•ᴗ•)", 28, Ink, true)); }
             int downgrade = Json.N(overall, "downgraded"), suspicious = Json.N(overall, "suspicious");
             string headline = snapshot == null ? "正在连接检测后端" : downgrade > 0 ? downgrade + " 个会话降配" : suspicious > 0 ? suspicious + " 个会话可疑" : Json.N(overall, "unverified") > 0 ? "有会话等待验证" : Json.N(overall, "running") > 0 ? "正在检测模型" : "未发现模型降配";
             var title = Text(headline, 20, downgrade > 0 ? Red : suspicious > 0 ? Orange : Ink, true); title.TextAlignment = TextAlignment.Center; header.Children.Add(title);
@@ -644,7 +653,7 @@ namespace Nerfed {
         }
         void CreateTray() {
             try {
-                using (var bitmap = new System.Drawing.Bitmap(FacePath("ok"))) { IntPtr icon = bitmap.GetHicon(); try { trayIcon = (System.Drawing.Icon)System.Drawing.Icon.FromHandle(icon).Clone(); } finally { DestroyIcon(icon); } }
+                using (Stream stream = FaceStream("ok")) using (var bitmap = new System.Drawing.Bitmap(stream)) { IntPtr icon = bitmap.GetHicon(); try { trayIcon = (System.Drawing.Icon)System.Drawing.Icon.FromHandle(icon).Clone(); } finally { DestroyIcon(icon); } }
                 tray = new Forms.NotifyIcon { Icon = trayIcon, Text = "is-gpt-nerfed · 点击打开面板", Visible = true };
                 var menu = new Forms.ContextMenuStrip();
                 menu.Items.Add("打开面板", null, delegate { OnUI(ShowPanel); });

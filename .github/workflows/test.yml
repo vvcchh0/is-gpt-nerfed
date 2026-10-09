@@ -29,6 +29,8 @@ jobs:
           node-version: '22'
       - if: matrix.python == '3.10'
         run: python -m pip install tomli
+      - if: runner.os == 'Windows' && matrix.python == '3.11'
+        run: .\tools\build-windows.ps1
       - run: python -X utf8 -m unittest discover -s tests -v
       - if: runner.os == 'Windows'
         run: python -X utf8 windows/app.py --smoke-test

@@ -6,7 +6,9 @@ param(
     [switch]$Launch
 )
 $ErrorActionPreference = 'Stop'
+$previousEncoding = [Console]::OutputEncoding
 try {
+    [Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
     if ($TrustHooks -and $NoTrust) { throw 'Choose either -TrustHooks or -NoTrust.' }
     . (Join-Path $PSScriptRoot 'tools/windows-runtime.ps1')
     $python = Get-NerfedPython
@@ -37,4 +39,6 @@ try {
 } catch {
     [Console]::Error.WriteLine($_.Exception.Message)
     exit 1
+} finally {
+    [Console]::OutputEncoding = $previousEncoding
 }

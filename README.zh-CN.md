@@ -1,11 +1,12 @@
 > **Windows 移植版（`windows` 分支）：** 支持原生 Windows 10/11，提供 PowerShell 安装器、
-> 原生 WPF 卡片面板、系统托盘及共享 Python 检测后端。需要 Python 3.10+ 和 Windows PowerShell 5.1/.NET Framework。
-> 旧 Tk 面板可用 `launch.cmd --legacy-tk` 打开。
-> 运行 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1`，然后 `.\launch.cmd`。
+> 编译的 `IsGPTNerfed.exe`、界面 DLL、系统托盘及共享检测后端。下载 **win-x64 便携包**，
+> 解压后运行 `IsGPTNerfed.exe`，包内已提供独立 Python 运行时；需要 Windows 10/11 x64 和 .NET Framework 4.8。
+> 首次注册插件运行 `install.ps1`。另提供源码包，需要 Python 3.10+ 和 Windows PowerShell 5.1；
+> 源码模式运行 `launch.cmd`，旧 Tk 面板可用 `launch.cmd --legacy-tk` 打开。
 > 详见 [具体操作顺序](docs/INTERACTION.zh-CN.md)、[Windows 使用说明](docs/WINDOWS.md)、[源码与原理分析](docs/ANALYSIS.zh-CN.md)、
 > [验收证据](docs/VALIDATION.md)。原作者为
 > [kiyoakii/is-gpt-nerfed](https://github.com/kiyoakii/is-gpt-nerfed)，MIT；归属见 [NOTICE.md](NOTICE.md)。
-> [Windows 下载页](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.2)提供源码 ZIP 与 SHA-256 校验文件。
+> [Windows 下载页](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.3)提供便携包、源码 ZIP 与 SHA-256 校验文件。
 > 下方保留原 macOS 文档。数字指纹是库内统计归因信号，主动探测使用联网 Codex 推理，
 > 具体检测边界见 Windows 使用说明。
 

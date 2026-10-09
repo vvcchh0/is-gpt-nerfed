@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import contextvars
 import datetime as dt
 import glob
 import json
@@ -31,6 +32,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 
@@ -104,6 +106,14 @@ EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]
 SIZE_TAGS = (("nano", 0), ("mini", 1), ("spark", 1), ("lite", 1), ("small", 1), ("flash", 1),
              ("reserve", 1), ("auto-review", 1))
 
+# Windows readers may briefly hold a target without FILE_SHARE_DELETE. Retry only
+# the replacement, for at most 150 ms per write and 250 ms of waits per hook (the
+# shortest configured hook timeout is 3 s). Persistent access failures still raise.
+JSON_REPLACE_RETRY_DELAYS = (0.01, 0.02, 0.04, 0.08)
+HOOK_WRITE_RETRY_BUDGET_S = 0.25
+_write_retry_budget = contextvars.ContextVar("write_retry_budget", default=None)
+KNOWN_HOOK_EVENTS = frozenset(("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SessionEnd"))
+
 # --------------------------------------------------------------------------------------- utilities
 
 
@@ -129,11 +139,33 @@ def read_json(path: str, default=None):
 
 
 def write_json(path: str, obj) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = f"{path}.{os.getpid()}.tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(obj, f, indent=2, ensure_ascii=False)
-    os.replace(tmp, path)
+    directory = os.path.dirname(path)
+    os.makedirs(directory, exist_ok=True)
+    tmp = None
+    try:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=directory,
+                                         prefix=f"{os.path.basename(path)}.{os.getpid()}.", suffix=".tmp", delete=False) as f:
+            tmp = f.name
+            json.dump(obj, f, indent=2, ensure_ascii=False)
+        for attempt in range(len(JSON_REPLACE_RETRY_DELAYS) + 1):
+            try:
+                os.replace(tmp, path)
+                break
+            except OSError as e:
+                retryable = isinstance(e, PermissionError) or getattr(e, "winerror", None) in (5, 32, 33)
+                if sys.platform != "win32" or not retryable or attempt == len(JSON_REPLACE_RETRY_DELAYS):
+                    raise
+                delay = JSON_REPLACE_RETRY_DELAYS[attempt]
+                remaining = _write_retry_budget.get()
+                if remaining is not None:
+                    if delay > remaining:
+                        raise
+                    _write_retry_budget.set(remaining - delay)
+                time.sleep(delay)
+    finally:
+        if tmp is not None:
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(tmp)
 
 
 def append_jsonl(path: str, obj) -> None:
@@ -174,14 +206,35 @@ def log_event(kind: str, level: str = "info", **fields) -> None:
         pass
 
 
-def log_error(msg: str) -> None:
+def log_error(msg: str, **fields) -> None:
     try:
         os.makedirs(NERFED_HOME, exist_ok=True)
         with open(ERRORS_PATH, "a", encoding="utf-8") as f:
-            f.write(f"{iso()} {msg}\n")
+            detail = " " + json.dumps(fields, ensure_ascii=False) if fields else ""
+            f.write(f"{iso()} {msg}{detail}\n")
     except Exception:
         pass
-    log_event("error", level="error", message=str(msg)[:2000])
+    log_event("error", level="error", message=str(msg)[:2000], **fields)
+
+
+def safe_hook_event(event) -> str:
+    return event if isinstance(event, str) and event in KNOWN_HOOK_EVENTS else "unknown"
+
+
+def log_hook_error(event, error: BaseException) -> None:
+    # Exception messages, source lines and frame locals can contain hook input or
+    # credentials. Keep the stack locations and filesystem error metadata only.
+    frames = ["Traceback (most recent call last):"]
+    tb = error.__traceback__
+    while tb is not None:
+        code = tb.tb_frame.f_code
+        frames.append(f"  File {code.co_filename!r}, line {tb.tb_lineno}, in {code.co_name}")
+        tb = tb.tb_next
+    frames.append(type(error).__name__)
+    log_error("hook crashed", event=safe_hook_event(event), exception_type=type(error).__name__,
+              errno=getattr(error, "errno", None), winerror=getattr(error, "winerror", None),
+              filename=getattr(error, "filename", None), filename2=getattr(error, "filename2", None),
+              traceback="\n".join(frames))
 
 
 def short(s, n: int = 8) -> str:
@@ -1764,6 +1817,7 @@ def cmd_hook(args) -> int:
     except Exception:
         payload = {"_unparsed": raw[:2000]}
     ev = payload.get("hook_event_name") or payload.get("hookEventName") or args.event or "unknown"
+    args.event = safe_hook_event(ev)  # retain the actual event for fail-open diagnostics, never the payload
     sid = str(payload.get("session_id") or payload.get("thread_id") or payload.get("threadId") or "unknown")
     if os.environ.get("NERFED_PROBE_PROCESS"):  # hooks fired by our own probe app-server: ignore
         return 0
@@ -3212,12 +3266,18 @@ def cmd_teardown(args) -> int:
 def cmd_doctor(args) -> int:
     cfg = load_config()
     problems = 0
+    warnings = 0
 
     def check(ok: bool, label: str, hint: str = ""):
         nonlocal problems
         print(f"  {'✅' if ok else '❌'} {label}" + (f"  → {hint}" if (not ok and hint) else ""))
         if not ok:
             problems += 1
+
+    def warn(label: str, hint: str = ""):
+        nonlocal warnings
+        warnings += 1
+        print(f"  ⚠️  {label}" + (f"  → {hint}" if hint else ""))
 
     print(f"is-gpt-nerfed doctor (v{VERSION})")
     upd = update_status()
@@ -3233,8 +3293,8 @@ def cmd_doctor(args) -> int:
         print(f"     also found {other} ({codex_version(other) or 'version unknown'}), not used")
     saved = (db_query("SELECT cli_version FROM threads WHERE cli_version != '' ORDER BY updated_at DESC LIMIT 1") or [{}])[0].get("cli_version")
     if cb and saved and codex_version_key(codex_version(cb)) < codex_version_key(saved):
-        print(f"  ⚠️  codex {codex_version(cb)} is older than the Codex that saved your latest session ({saved}); probes may be "
-              "refused → update it, or unset codex_bin")
+        warn(f"codex {codex_version(cb)} is older than the Codex that saved your latest session ({saved}); probes may be refused",
+             "update it, or unset codex_bin")
     check(os.path.exists(os.path.join(SKILL_DIR, "SKILL.md")), f"skill {os.path.join(SKILL_DIR, 'SKILL.md')}")
     prov = read_json(os.path.join(PLUGIN_ROOT, "assets", "modeltrace", "provenance.json"), {}) or {}
     bank_ok = os.path.exists(BANK_PATH)
@@ -3273,20 +3333,31 @@ def cmd_doctor(args) -> int:
     elif hs.get("state") == "missing":
         check(False, "Codex does not list this plugin's hooks", "run ./install.sh, then restart the Codex app")
     else:
-        print(f"  ⚠️  hook trust unknown ({hs.get('error') or 'not checked yet'})")
+        warn(f"hook trust unknown ({hs.get('error') or 'not checked yet'})")
     if hs.get("disabled"):
         check(False, f"{hs['disabled']} of {hs.get('total')} hooks are switched off in Codex",
               "turn them back on in Codex's Hooks screen")
     for note in hs.get("notes") or []:  # what Codex's own hooks screen shows as loading problems
-        print(f"  {'❌' if note['kind'] == 'error' else '⚠️ '} codex {note['kind']}: {note['message']}")
+        label = f"codex {note['kind']}: {note['message']}"
+        if note["kind"] == "error":
+            check(False, label)
+        else:
+            warn(label)
     evs = tail_jsonl(EVENTS_PATH, 1)
     recent = bool(evs) and evs[0].get("ts", "") >= iso(now() - 48 * 3600)
-    print(f"  {'✅' if recent else '⚠️ '} hook events seen: {evs[0]['ts'] + ' ' + evs[0]['event'] if evs else 'none yet'}"
-          + ("" if recent else "  → restart the Codex app, send any message, then re-run doctor"))
-    print(f"  {'✅' if hs.get('desktop_loaded') else '⚠️ '} Codex Desktop has fired these hooks: "
-          + (f"yes, last {hs.get('last_desktop_event_ago')}" if hs.get("desktop_loaded") else "not yet  → the desktop app loads plugins and hook trust at start: quit and reopen it"))
+    event_label = f"hook events seen: {evs[0].get('ts', '?') + ' ' + str(evs[0].get('event') or 'unknown') if evs else 'none yet'}"
+    if recent:
+        check(True, event_label)
+    else:
+        warn(event_label, "send a message in Codex, then re-run doctor")
+    desktop_label = "Codex Desktop has fired these hooks: "
+    if hs.get("desktop_loaded"):
+        check(True, desktop_label + f"yes, last {hs.get('last_desktop_event_ago')}")
+    else:
+        warn(desktop_label + "not yet", "the desktop app loads plugins and hook trust at start: quit and reopen it")
     if hs.get("desktop_loaded") and not hs.get("desktop_loaded_current"):
-        print(f"  ⚠️  none since this version was installed ({hs.get('installed_ago')}); the desktop may still run the previous copy → quit and reopen it if this persists")
+        warn(f"none since this version was installed ({hs.get('installed_ago')}); the desktop may still run the previous copy",
+             "quit and reopen it if this persists")
     try:
         parse_frequency(cfg.get("frequency"))
         check(True, f"frequency {cfg.get('frequency')!r}, mode {cfg.get('mode')!r}, queries {cfg.get('queries')}")
@@ -3307,11 +3378,24 @@ def cmd_doctor(args) -> int:
                 check(False, f"ephemeral fork failed: {e}")
     if os.path.exists(ERRORS_PATH):
         try:
-            last = open(ERRORS_PATH).read().strip().splitlines()[-1][:160]
-            print(f"  ⚠️  errors logged in {ERRORS_PATH} (last: {last})")
-        except Exception:
-            pass
-    print(f"{'all good' if not problems else str(problems) + ' problem(s)'} — next: restart the Codex app, then in any session say  {SKILL_CMD}")
+            with open(ERRORS_PATH, encoding="utf-8", errors="replace") as f:
+                last = next((line.strip() for line in reversed(f.read().splitlines()) if line.strip()), "")
+            if last:
+                match = re.match(r"^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ)\s+(.*)$", last)
+                error_ts = match.group(1) if match else None
+                detail = f"last error at {error_ts}: {match.group(2)[:160]}" if match else f"last entry: {last[:160]}"
+                warn(f"errors retained in {ERRORS_PATH} ({detail})")
+                if error_ts and evs and evs[0].get("ts", "") > error_ts:
+                    print(f"     hook activity recorded afterward: {evs[0]['ts']} {evs[0].get('event') or 'unknown'}; "
+                          "later activity does not establish that the error is resolved")
+        except OSError as e:
+            warn(f"could not read {ERRORS_PATH} ({type(e).__name__})")
+    if problems:
+        print(f"{problems} problem(s), {warnings} warning(s) — resolve failed checks above")
+    elif warnings:
+        print(f"{warnings} warning(s) — review warnings above")
+    else:
+        print("all good — passive hook checks passed")
     return 0 if not problems else 1
 
 
@@ -3559,11 +3643,15 @@ def main(argv=None) -> int:
                 event = argv[i + 1]
             elif a.startswith("--event=") or (a.startswith("--event") and len(a) > len("--event")):
                 event = a.split("=", 1)[1] if "=" in a else a[len("--event"):]
+        args = argparse.Namespace(cmd="hook", event=event)
+        retry_token = _write_retry_budget.set(HOOK_WRITE_RETRY_BUDGET_S)
         try:
-            return cmd_hook(argparse.Namespace(cmd="hook", event=event))
+            return cmd_hook(args)
         except BaseException as e:  # noqa: BLE001 — includes SystemExit
-            log_error(f"hook crashed: {e!r}")
+            log_hook_error(args.event, e)
             return 0
+        finally:
+            _write_retry_budget.reset(retry_token)
     parser = build_parser()
     args = parser.parse_args(argv)
     if not getattr(args, "fn", None):

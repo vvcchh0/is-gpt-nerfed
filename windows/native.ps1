@@ -40,12 +40,13 @@ try {
     }
     . (Join-Path (Split-Path -Parent $PSScriptRoot) 'tools/windows-runtime.ps1')
     $python = Get-NerfedPython
-    Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml, System.Windows.Forms, System.Drawing, System.Web.Extensions
+    Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml, System.Xml, System.Windows.Forms, System.Drawing, System.Web.Extensions
     $references = @(
         [Windows.Window].Assembly.Location,
         [Windows.Media.Visual].Assembly.Location,
         [Windows.Threading.Dispatcher].Assembly.Location,
         [System.Xaml.XamlReader].Assembly.Location,
+        [Xml.XmlReader].Assembly.Location,
         [Windows.Forms.NotifyIcon].Assembly.Location,
         [Drawing.Icon].Assembly.Location,
         [Web.Script.Serialization.JavaScriptSerializer].Assembly.Location

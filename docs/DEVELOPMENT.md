@@ -2,6 +2,7 @@
 
 Windows branch: [native install and development](WINDOWS.md), [source analysis](ANALYSIS.zh-CN.md),
 [port design](adr/0001-windows-port.md), [native UI design](adr/0002-native-windows-ui.md),
+[compiled delivery](adr/0003-compiled-windows-distribution.md),
 [interaction guide](INTERACTION.zh-CN.md), [validation evidence](VALIDATION.md), and
 [original author attribution](../NOTICE.md). The platform-specific notes below describe upstream macOS.
 

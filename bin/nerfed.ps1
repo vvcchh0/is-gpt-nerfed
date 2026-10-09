@@ -1,5 +1,7 @@
 $ErrorActionPreference = 'Stop'
+$previousEncoding = [Console]::OutputEncoding
 try {
+    [Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
     $root = Split-Path -Parent $PSScriptRoot
     . (Join-Path $root 'tools/windows-runtime.ps1')
     $python = Get-NerfedPython
@@ -8,4 +10,6 @@ try {
 } catch {
     [Console]::Error.WriteLine($_.Exception.Message)
     exit 1
+} finally {
+    [Console]::OutputEncoding = $previousEncoding
 }

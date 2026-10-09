@@ -15,6 +15,10 @@ not an official OpenAI product. The original project name and Codex plugin ident
 - Original terminal picker: [IngoMeyer441/simple-term-menu](https://github.com/IngoMeyer441/simple-term-menu), MIT;
   vendored license retained. Windows uses a numbered picker instead.
 - Random-number fingerprint inspiration: [hanlinwenyuan/hlwy-ai-checker](https://github.com/hanlinwenyuan/hlwy-ai-checker).
+- Compiled Windows portable releases bundle the official [CPython 3.13.16 embeddable x64 runtime](https://www.python.org/downloads/release/python-31316/),
+  from the Python Software Foundation and contributors. Its Python/third-party license text is retained
+  in the distributed `runtime/LICENSE.txt`; fixed download provenance is recorded in the release manifest
+  and [ADR 0003](docs/adr/0003-compiled-windows-distribution.md). Runtime binaries are not checked into Git.
 
 The Windows port changes platform integration and presentation. It does not retrain the bank,
 replace reference prompts, or claim independently measured attribution accuracy.

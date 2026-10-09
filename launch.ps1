@@ -1,16 +1,29 @@
 $ErrorActionPreference = 'Stop'
 try {
     if ($args -contains '--legacy-tk') {
-        . (Join-Path $PSScriptRoot 'tools/windows-runtime.ps1')
-        $python = Get-NerfedPython
-        $pythonw = Join-Path (Split-Path -Parent $python) 'pythonw.exe'
         $app = Join-Path $PSScriptRoot 'windows/app.py'
+        if (!(Test-Path -LiteralPath $app -PathType Leaf)) { throw 'Legacy Tk is included only in the source ZIP. Use IsGPTNerfed.exe in the portable release.' }
+        . (Join-Path $PSScriptRoot 'tools/windows-runtime.ps1')
+        $python = Get-NerfedPython -SkipBundled
+        $pythonw = Join-Path (Split-Path -Parent $python) 'pythonw.exe'
         $legacyArgs = @($args | Where-Object { $_ -ne '--legacy-tk' })
         if ($legacyArgs.Count -gt 0 -or !(Test-Path -LiteralPath $pythonw)) {
             & $python -X utf8 $app @legacyArgs
             exit $LASTEXITCODE
         }
         Start-Process -FilePath $pythonw -ArgumentList @('-X', 'utf8', ('"' + $app + '"')) -WindowStyle Hidden
+        exit 0
+    }
+    $compiled = Join-Path $PSScriptRoot 'IsGPTNerfed.exe'
+    if (Test-Path -LiteralPath $compiled -PathType Leaf) {
+        if ($args.Count -gt 0) {
+            # GUI executables need an explicit wait when launched from PowerShell.
+            # Direct invocation with a pipeline waits and preserves its diagnostic streams.
+            [Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
+            & $compiled @args | Out-Host
+            exit $LASTEXITCODE
+        }
+        Start-Process -FilePath $compiled -WindowStyle Hidden
         exit 0
     }
     $native = Join-Path $PSScriptRoot 'windows/native.ps1'

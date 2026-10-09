@@ -156,6 +156,8 @@ Codex 对非 managed 插件 hooks 要求信任当前定义，安装不会自动�
 第一版选择 Python/Tkinter + Win32 托盘，验证核心在 Windows 上可用；其理由保留在 ADR 0001。
 后续根据用户截图和原作 macOS 界面改为 WPF + Windows PowerShell 5.1 / .NET Framework，
 继续复用 Python CLI 快照和检测逻辑，Tk 作为显式回退。框架选择及替代方案见 ADR 0002。
+编译发行版进一步将 WPF 前端编译为 EXE/DLL，嵌入界面资源并提供应用私有 Python 运行时；
+源码模式仍可使用 PowerShell 启动。它没有重写统计评分器，具体打包理由与来源见 ADR 0003。
 PowerShell 负责安装及入口，Windows hook manifest
 在本地生成，稳定副本代替需要管理员或 Developer Mode 的目录符号链接。
 UTF-8 子进程和正确参数传递用于处理中文／空格路径；桌面 Codex 与 PATH CLI 取较新版本，
@@ -167,7 +169,8 @@ UTF-8 子进程和正确参数传递用于处理中文／空格路径；桌面 C
 不能据此保证已经发出的服务端推理也被取消。
 
 具体安装、配置与卸载见 [WINDOWS.md](WINDOWS.md)。设计取舍见
-[ADR 0001](adr/0001-windows-port.md) 与 [ADR 0002](adr/0002-native-windows-ui.md)，
+[ADR 0001](adr/0001-windows-port.md)、[ADR 0002](adr/0002-native-windows-ui.md) 与
+[ADR 0003](adr/0003-compiled-windows-distribution.md)，
 交互顺序见 [操作指南](INTERACTION.zh-CN.md)，实际命令、测试结果和未覆盖项见
 [VALIDATION.md](VALIDATION.md)。后续如果要做签名 EXE、通知中心 toast 或新模型校准，
 应分别补充平台打包验收和统计验证，不能把本次兼容性测试当成相应证据。
