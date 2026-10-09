@@ -51,6 +51,26 @@ Completed native checks:
   the child exited within the five-second observation window when its stdin pipe closed.
   The process handle referred only to the newly created private server; no existing Codex process was stopped.
 
+The source ZIP was built with `tools/build-windows.ps1` from a clean committed tree, then extracted
+into a temporary Chinese/space path. Its checksum, original bank digest, licenses and entry points
+were verified. The extracted PowerShell `--version`, `selftest` (18/18 reference outputs), and
+`launch.ps1 --smoke-test` each exited 0 with isolated state and zero inference requests.
+
+## Remote acceptance
+
+[GitHub Actions run 37867014500](https://github.com/vvcchh0/is-gpt-nerfed/actions/runs/37867014500)
+tested implementation commit `d224996e1f41888ba23bf170b22eeaf3af416d21` successfully:
+
+| Platform | Python | Result |
+| --- | --- | --- |
+| Windows | 3.10 | 73 tests passed, plus Windows GUI smoke |
+| Windows | 3.11 | 73 tests passed, plus Windows GUI smoke |
+| Ubuntu | 3.11 | 59 passed, 14 platform/display checks skipped |
+| macOS | 3.11 | 59 passed, 14 platform/display checks skipped |
+
+Python 3.10 uses `tomli` only for independent TOML parsing in a test; the runtime remains stdlib-only.
+Ubuntu/macOS runs validate shared backend compatibility and do not certify the Windows UI there.
+
 ## Limits of this validation
 
 No real fingerprint inference was performed and no attribution accuracy was measured on the user's
@@ -61,5 +81,4 @@ not that probing and the desktop connection have identical server routing.
 Active inference cancellation after a forced worker shutdown was not exercised; only an idle real
 app-server's exit was verified. Notification Center toast integration, signed EXE packaging,
 automatic startup, Windows ARM64, and additional Python/Windows versions are not locally certified.
-The configured CI matrix adds Windows Python 3.10/3.11 and Ubuntu/macOS Python 3.11 coverage;
-its actual run results must be distinguished from local evidence.
+The remote matrix evidence above is separate from the local, real-Codex and manual visual checks.

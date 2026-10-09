@@ -4,6 +4,7 @@
 > 详见 [Windows 使用说明](docs/WINDOWS.md)、[源码与原理分析](docs/ANALYSIS.zh-CN.md)、
 > [验收证据](docs/VALIDATION.md)。原作者为
 > [kiyoakii/is-gpt-nerfed](https://github.com/kiyoakii/is-gpt-nerfed)，MIT；归属见 [NOTICE.md](NOTICE.md)。
+> [Windows 下载页](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.1)提供源码 ZIP 与 SHA-256 校验文件。
 > 下方保留原 macOS 文档。数字指纹是库内统计归因信号，主动探测使用联网 Codex 推理，
 > 具体检测边界见 Windows 使用说明。
 

@@ -3,6 +3,7 @@
 > Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1`, then `.\launch.cmd`.
 > Python 3.10+ with Tcl/Tk is required. See [Windows guide](docs/WINDOWS.md),
 > [source analysis (中文)](docs/ANALYSIS.zh-CN.md), and [validation](docs/VALIDATION.md).
+> Download the source ZIP and checksum from the [Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.1).
 > Derived from [kiyoakii/is-gpt-nerfed](https://github.com/kiyoakii/is-gpt-nerfed), MIT;
 > original author and dependency credits are preserved in [NOTICE.md](NOTICE.md).
 > The original macOS documentation follows. Fingerprints are closed-set statistical signals,

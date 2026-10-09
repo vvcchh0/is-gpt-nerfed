@@ -1,5 +1,16 @@
 # Changelog
 
+## Windows 0.5.3-port.1 — 2026-10-09
+
+- Native Windows integration: PowerShell/cmd entry points, generated plugin hooks, stable plugin copies,
+  UTF-8 process launch, Windows locks/process queries, Codex desktop discovery, and encoded SQLite file URIs.
+- Python/Tk desktop panel with Win32 tray, session reports, manual/fresh probes, settings and the shared scheduler.
+- Retain upstream ancestry, authors, licenses, ModelTrace bank and numerical scoring. See
+  [NOTICE](NOTICE.md), [analysis](docs/ANALYSIS.zh-CN.md), and [Windows guide](docs/WINDOWS.md).
+- Native Windows 73-test acceptance and Windows 3.10/3.11 + Ubuntu/macOS CI; isolated installation,
+  trusted hooks, uninstall/purge, real Codex handshake/ephemeral fork, and extracted-package checks.
+  See [validation evidence and limits](docs/VALIDATION.md).
+
 ## 0.5.3 — 2026-09-29
 
 - 0.5.2 picked the wrong codex: any `codex` on PATH won over the one inside the ChatGPT app, so a Mac with an
