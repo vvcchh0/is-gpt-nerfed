@@ -47,7 +47,7 @@ class WindowsLauncherTests(unittest.TestCase):
 
     def test_powershell_entrypoints_parse(self):
         files = [ROOT / name for name in ("install.ps1", "uninstall.ps1", "launch.ps1",
-                                          "bin/nerfed.ps1", "tools/windows-runtime.ps1", "tools/build-windows.ps1")]
+                                          "windows/native.ps1", "bin/nerfed.ps1", "tools/windows-runtime.ps1", "tools/build-windows.ps1")]
         literal = ",".join("'" + str(p).replace("'", "''") + "'" for p in files)
         code = (
             "$bad=0; foreach($p in @(" + literal + ")) {"
@@ -58,6 +58,22 @@ class WindowsLauncherTests(unittest.TestCase):
         proc = subprocess.run(["powershell.exe", "-NoProfile", "-Command", code],
                               capture_output=True, encoding="utf-8", timeout=30)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+    def test_default_native_and_explicit_legacy_smoke(self):
+        with tempfile.TemporaryDirectory(prefix="nerfed-launch-ui-") as temp:
+            user_state = Path(temp) / "untouched caller homes"
+            env = {**os.environ, "NERFED_PYTHON": sys.executable,
+                   "CODEX_HOME": str(user_state / "codex"), "NERFED_HOME": str(user_state / "ledger")}
+            for options, expected in ((["--smoke-test"], "Native WPF smoke passed"),
+                                      (["--legacy-tk", "--smoke-test"], "")):
+                command = subprocess.list2cmdline([os.environ.get("COMSPEC", "cmd.exe"), "/d", "/s", "/c"])
+                command += ' "' + subprocess.list2cmdline([str(ROOT / "launch.cmd"), *options]) + '"'
+                result = subprocess.run(command, env=env, capture_output=True, encoding="utf-8",
+                                        errors="replace", timeout=45)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                if expected:
+                    self.assertIn(expected, result.stdout)
+                self.assertFalse(user_state.exists())
 
 
 if __name__ == "__main__":

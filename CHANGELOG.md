@@ -1,5 +1,16 @@
 # Changelog
 
+## Windows 0.5.3-port.2 — 2026-10-09
+
+- Replace the default Tk presentation with a native WPF panel inspired by upstream's screenshots
+  and macOS source: status face, semantic session rows, expanded evidence/history, fresh-session
+  controls and a separate Chinese settings page. The previous panel remains as `--legacy-tk`.
+- Separate asynchronous snapshot/diagnostic/navigation feedback from long-running probes;
+  scheduler output no longer appears as session evidence. Show both scheduling frequencies and
+  save settings explicitly, retaining the detector, prompts, bank and original data formats.
+- Add a [step-by-step interaction guide](docs/INTERACTION.zh-CN.md) and preserve the framework
+  decision/history in [ADR 0002](docs/adr/0002-native-windows-ui.md).
+
 ## Windows 0.5.3-port.1 — 2026-10-09
 
 - Native Windows integration: PowerShell/cmd entry points, generated plugin hooks, stable plugin copies,

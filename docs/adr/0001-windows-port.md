@@ -2,6 +2,8 @@
 
 Date: 2026-10-08
 Status: Accepted for the first Windows port
+Frontend decision later superseded by [ADR 0002](0002-native-windows-ui.md), 2026-10-09;
+the original decision and other platform/detector choices remain recorded below.
 Source: user request to analyze `is-gpt-nerfed-main`, deliver `if-gpt-nerfed-main` on Windows,
 use Git, publish a fork/branch and credit the original author.
 

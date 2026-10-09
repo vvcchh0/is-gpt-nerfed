@@ -1,12 +1,19 @@
 > **Windows 移植版（`windows` 分支）：** 支持原生 Windows 10/11，提供 PowerShell 安装器、
-> Python/Tkinter 桌面面板、系统托盘及共享检测后端。需要带 Tcl/Tk 的 Python 3.10+。
+> 原生 WPF 卡片面板、系统托盘及共享 Python 检测后端。需要 Python 3.10+ 和 Windows PowerShell 5.1/.NET Framework。
+> 旧 Tk 面板可用 `launch.cmd --legacy-tk` 打开。
 > 运行 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1`，然后 `.\launch.cmd`。
-> 详见 [Windows 使用说明](docs/WINDOWS.md)、[源码与原理分析](docs/ANALYSIS.zh-CN.md)、
+> 详见 [具体操作顺序](docs/INTERACTION.zh-CN.md)、[Windows 使用说明](docs/WINDOWS.md)、[源码与原理分析](docs/ANALYSIS.zh-CN.md)、
 > [验收证据](docs/VALIDATION.md)。原作者为
 > [kiyoakii/is-gpt-nerfed](https://github.com/kiyoakii/is-gpt-nerfed)，MIT；归属见 [NOTICE.md](NOTICE.md)。
-> [Windows 下载页](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.1)提供源码 ZIP 与 SHA-256 校验文件。
+> [Windows 下载页](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.2)提供源码 ZIP 与 SHA-256 校验文件。
 > 下方保留原 macOS 文档。数字指纹是库内统计归因信号，主动探测使用联网 Codex 推理，
 > 具体检测边界见 Windows 使用说明。
+
+<p align="center">
+  <img src="docs/windows-native-main.png" width="46%" align="top" alt="Windows 原生 WPF 面板：状态总览、会话卡片与新会话检测">
+  <img src="docs/windows-native-detail.png" width="46%" align="top" alt="Windows 展开的会话：指纹归因、历史检测与被动证据">
+  <br><sub>新版 Windows 原生面板，使用合成示例数据，演示模式不发起推理。<a href="docs/INTERACTION.zh-CN.md">具体操作顺序</a> · <a href="docs/windows-native-settings.png">设置页示意图</a></sub>
+</p>
 
 <p align="center"><img src="docs/social-preview.png" width="880" alt="is-gpt-nerfed：检测 Codex 模型是否缩水"></p>
 

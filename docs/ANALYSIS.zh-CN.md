@@ -45,7 +45,7 @@ flowchart LR
     S --> V[裁决门槛]
     P --> V
     V --> R[本地 ledger 与 report / snapshot]
-    R --> U[Windows Tk 面板与托盘]
+    R --> U[Windows WPF 面板与托盘]
     U --> L
 ```
 
@@ -137,7 +137,8 @@ softmax 会放大很小的分数差，所以后端还检查原始融合分数的
 `~/.codex/is-gpt-nerfed` 中保存配置、会话 JSON、探测完整回答、索引和结构化日志。
 `probe_due()` 支持轮数差或时间间隔。时间模式比较创建／上次探测／上次提醒到当前的墙钟时间，
 并非累计计算用户真正工作的分钟数；`tick` 只补查近期有 hook 活动的会话（活动窗口 15 分钟）。
-新会话探测另有独立的时间调度，默认 `manual`。GUI 每 30 秒调用既有调度器。
+新会话探测另有独立的时间调度，默认 `manual`。WPF 面板每 8 秒读取快照；满足条件时调用既有调度器，
+普通会话检查至少相隔 60 秒，新会话到期检测重试至少相隔 300 秒。
 会话更新采用跨进程锁及临时文件替换；Windows 不能直接使用 `fcntl.flock`，
 也不能用 `os.kill(pid, 0)` 检查进程。Windows 版通过原生锁和非破坏性句柄检查处理这些差异。
 SQLite 只读连接用于会话定位，不改写 Codex 数据库；路径用标准 file URI 编码。
@@ -152,16 +153,21 @@ Codex 对非 managed 插件 hooks 要求信任当前定义，安装不会自动�
 
 ## Windows 实现与验收
 
-选择 Python/Tkinter + Win32 托盘是因为核心已是无第三方依赖的 Python，
-可复用现有快照协议，避免第二套评分器。PowerShell 负责安装及入口，Windows hook manifest
+第一版选择 Python/Tkinter + Win32 托盘，验证核心在 Windows 上可用；其理由保留在 ADR 0001。
+后续根据用户截图和原作 macOS 界面改为 WPF + Windows PowerShell 5.1 / .NET Framework，
+继续复用 Python CLI 快照和检测逻辑，Tk 作为显式回退。框架选择及替代方案见 ADR 0002。
+PowerShell 负责安装及入口，Windows hook manifest
 在本地生成，稳定副本代替需要管理员或 Developer Mode 的目录符号链接。
 UTF-8 子进程和正确参数传递用于处理中文／空格路径；桌面 Codex 与 PATH CLI 取较新版本，
 也支持显式指定。macOS 更新功能在 Windows 上禁用，防止取回错误平台的安装包。
 
-GUI 的文件和进程 I/O 放在线程中，Tk 更新统一通过队列回主线程；列表、证据和裁决
-直接消费后端输出。关闭窗口可留在托盘，退出后停止 GUI 定时器；已启动的探测遵循后端超时策略。
+新 GUI 的子进程输出异步读取，WPF 的布局和更新由 dispatcher 管理；列表、证据和裁决
+直接消费后端输出。快照刷新与长探测分别管理，调度输出不混入会话证据。
+关闭窗口可留在托盘；退出停止 GUI 定时器并结束面板自己启动的后端进程。
+不能据此保证已经发出的服务端推理也被取消。
 
 具体安装、配置与卸载见 [WINDOWS.md](WINDOWS.md)。设计取舍见
-[ADR 0001](adr/0001-windows-port.md)，实际命令、测试结果和未覆盖项见
+[ADR 0001](adr/0001-windows-port.md) 与 [ADR 0002](adr/0002-native-windows-ui.md)，
+交互顺序见 [操作指南](INTERACTION.zh-CN.md)，实际命令、测试结果和未覆盖项见
 [VALIDATION.md](VALIDATION.md)。后续如果要做签名 EXE、通知中心 toast 或新模型校准，
 应分别补充平台打包验收和统计验证，不能把本次兼容性测试当成相应证据。

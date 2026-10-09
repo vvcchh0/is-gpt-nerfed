@@ -1,12 +1,15 @@
 # Windows port
 
-Windows 10/11, Python 3.10+ with Tcl/Tk (recommended: Python 3.11+), and a signed-in Codex
-desktop app or CLI with plugin hooks and the experimental app-server protocol are required.
-The Python.org Windows installer includes Tcl/Tk by default. No pip packages, administrator
-privileges, WSL or Git Bash are needed at runtime.
+Windows 10/11 desktop, Windows PowerShell 5.1 with the OS's .NET Framework WPF, Python 3.10+
+(recommended: 3.11+), and a signed-in Codex desktop app or CLI with plugin hooks and the
+experimental app-server protocol are required. The default panel is native WPF; Tcl/Tk is
+only required for the optional legacy panel. No .NET SDK, pip packages, administrator privileges,
+WSL or Git Bash are needed at runtime.
 
 Original author and licenses: [NOTICE.md](../NOTICE.md). 中文源码分析：[ANALYSIS.zh-CN.md](ANALYSIS.zh-CN.md).
-Design: [ADR 0001](adr/0001-windows-port.md). Validation evidence: [VALIDATION.md](VALIDATION.md).
+Interaction order: [中文操作指南](INTERACTION.zh-CN.md).
+Design: [ADR 0001](adr/0001-windows-port.md), [native UI decision](adr/0002-native-windows-ui.md).
+Validation evidence: [VALIDATION.md](VALIDATION.md).
 
 ## Install and open
 
@@ -31,21 +34,29 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -TrustHook
 
 `NERFED_PYTHON` can point to a specific `python.exe`. The installer resolves a real interpreter,
 skipping Store aliases. Hooks remember that interpreter, so reinstall if it is moved or removed.
-The app can also run directly with `python -X utf8 windows/app.py`.
+The previous Tk app remains available with `launch.cmd --legacy-tk` or directly with
+`python -X utf8 windows/app.py`.
 Native `codex.exe` and npm `codex.cmd` shims are supported. The `.cmd` bridge rejects embedded
 quotes, `%`, `!` and newlines rather than letting cmd.exe reinterpret them; use a native executable
 if your shim path or arguments contain these characters.
 
 ## Desktop and terminal
 
-The panel lists recent sessions, their last verdict and evidence. Select a session for its report,
-then probe or retry. Fresh session checks a new ephemeral session with the selected/default model.
-The first Windows presentation is in English; model IDs, stored records and CLI protocol remain unchanged.
-Closing the window keeps monitoring through the system tray; use Quit to exit. If the tray is
-unavailable, the window remains usable. The panel has a demo mode with synthetic data:
+The native panel follows upstream's status hero, semantic session rows, expanded attribution/history,
+fresh-session section and separate settings page. Chinese UI labels preserve model IDs, raw verdict
+codes, stored records and CLI contracts. Click a session title to expand evidence; use its probe/retry
+button for inference. Fresh model/effort overrides affect only the next manual fresh-session probe.
+Refresh, diagnostics and settings navigation remain available while a probe runs.
+
+Settings use an explicit save action. Session frequency and fresh-session frequency are distinct;
+reminder mode controls session scheduling, not the fresh heartbeat. Use manual for both frequencies
+to avoid later automatic probes. Enabling a timed fresh heartbeat with no prior sample for the current
+account can make it due immediately. Closing the window keeps monitoring through the system tray;
+use Quit to exit. If the tray is unavailable, the window remains usable. Demo uses synthetic data:
 
 ```powershell
 .\launch.cmd --demo
+.\launch.cmd --legacy-tk --demo
 .\bin\nerfed.cmd --version
 .\bin\nerfed.cmd doctor --live
 .\bin\nerfed.cmd selftest
@@ -62,7 +73,9 @@ for macOS/Linux. If `nerfed` is not on PATH, use the explicit `.\bin\nerfed.cmd`
 
 Default monitoring scans logs after each turn. Its 30-minute probe interval uses elapsed wall-clock
 time since the previous probe/nudge or session creation, checked while the session has recent hook activity.
-The panel also runs the scheduler every 30 seconds while open. Active probes use your Codex quota:
+While open, the native panel reads a snapshot every eight seconds. It checks eligible session
+scheduling at most once per minute and retries a due fresh heartbeat at most once per five minutes.
+Active probes use your Codex quota:
 normally three answers, with bounded retries on transport/timeouts. Set `frequency=manual` and
 `fresh_frequency=manual` for manual probes only, or `mode=nudge` for reminders.
 
@@ -86,7 +99,8 @@ the ledger. Restart Codex to unload hooks.
 ## Limits and privacy
 
 The macOS SwiftUI app, DMG installer and self-updater remain upstream features. Windows uses a
-Tkinter desktop/tray panel and a Python-dependent source ZIP. Windows does not download or install
+native WPF desktop/tray panel, an optional legacy Tk panel, and a Python-dependent source ZIP.
+The original images and upstream attribution are retained. Windows does not download or install
 macOS releases; update by pulling `windows` and rerunning the installer. There is no automatic startup
 registration, signed standalone EXE, or Windows Notification Center toast integration in this version.
 Tray balloon delivery depends on Windows notification settings; the ledger remains the authoritative record.
@@ -110,7 +124,8 @@ parsing in the installation regression. Python 3.11+ includes `tomllib`; the app
 
 ```powershell
 python -X utf8 -m unittest discover -s tests -v
-python -X utf8 windows/app.py --smoke-test
+.\launch.cmd --smoke-test
+python -X utf8 windows/app.py --smoke-test  # optional legacy panel
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\build-windows.ps1
 ```
 

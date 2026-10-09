@@ -1,13 +1,21 @@
 > **Windows port (`windows` branch):** Native Windows 10/11 support with PowerShell installation,
-> a Python/Tkinter desktop panel, system tray, and shared Codex detection backend.
+> a native WPF desktop panel, system tray, and shared Python Codex detection backend.
 > Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install.ps1`, then `.\launch.cmd`.
-> Python 3.10+ with Tcl/Tk is required. See [Windows guide](docs/WINDOWS.md),
-> [source analysis (中文)](docs/ANALYSIS.zh-CN.md), and [validation](docs/VALIDATION.md).
-> Download the source ZIP and checksum from the [Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.1).
+> Python 3.10+ and Windows PowerShell 5.1/.NET Framework are required. The old Tk panel remains
+> available with `launch.cmd --legacy-tk`. See [Windows guide](docs/WINDOWS.md),
+> [interaction order (中文)](docs/INTERACTION.zh-CN.md), [source analysis (中文)](docs/ANALYSIS.zh-CN.md),
+> and [validation](docs/VALIDATION.md).
+> Download the source ZIP and checksum from the [Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.2).
 > Derived from [kiyoakii/is-gpt-nerfed](https://github.com/kiyoakii/is-gpt-nerfed), MIT;
 > original author and dependency credits are preserved in [NOTICE.md](NOTICE.md).
 > The original macOS documentation follows. Fingerprints are closed-set statistical signals,
 > and active probes use normal online Codex inference; see the Windows guide for limitations.
+
+<p align="center">
+  <img src="docs/windows-native-main.png" width="46%" align="top" alt="Windows WPF panel: status summary, session cards and fresh-session controls">
+  <img src="docs/windows-native-detail.png" width="46%" align="top" alt="Windows WPF expanded session: attribution, history and passive evidence">
+  <br><sub>Windows native panel with synthetic data; inference is disabled in this demo. <a href="docs/INTERACTION.zh-CN.md">Interaction guide</a> · <a href="docs/windows-native-settings.png">Settings preview</a></sub>
+</p>
 
 <p align="center"><img src="docs/social-preview.png" width="880" alt="is-gpt-nerfed: shrinkflation detector for Codex"></p>
 

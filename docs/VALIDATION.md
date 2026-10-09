@@ -1,18 +1,83 @@
 # Windows validation record
 
+## Native WPF update — 0.5.3-port.2, 2026-10-09
+
+Scope: [ADR 0002](adr/0002-native-windows-ui.md), based on upstream screenshots and macOS
+sources. Implementation was delegated to **GPT-6.1 Sol, xhigh**; the parent reviewed the
+transport, lifecycle, UI semantics and synthetic screenshots, then ran the complete suite.
+The original Tk implementation remains available through `launch.cmd --legacy-tk`.
+
+### Local acceptance
+
+`python -X utf8 -m unittest discover -s tests -v`: **76 tests passed in 73.183 seconds**,
+exit 0 on the native Windows host with Python 3.11.2 and Windows PowerShell 5.1/.NET Framework WPF.
+This includes the existing statistical/backend/Tk tests, three launcher integrations and
+two new native tests. All new UI verification uses isolated homes and synthetic/fake inference.
+
+The native `--smoke-test` and `--self-test` both exited 0. The interaction self-test exercises:
+
+- Session detection, retry using the same worker entry point, fresh model/effort overrides,
+  omitted blank overrides, and changed-setting persistence.
+- Refresh and diagnostics while a fake probe waits; settings drafts and fresh-input keyboard
+  focus survive snapshot refresh. At the actual minimum 380 × 560 window size, scrolling
+  brings the Save button fully into the viewport.
+- Separate recent failure and last valid verdict; scheduler output does not enter the report.
+  Demo cannot run inference/scheduling, and heartbeat/tick requests are throttled independently.
+- Actual `NotifyIcon` creation, visibility and disposal, synthetic-window hide/restore,
+  shutdown rejection of new work and suppression of late-callback refreshes.
+- Real `Process` transport against a temporary dummy Python backend: Unicode, spaces, quotes
+  and trailing backslashes round-trip; concurrent large stdout/stderr drain; a diagnostic
+  request completes while a config command waits; shutdown stops only owned processes and
+  prevents the next config command from starting.
+- Caller homes remain untouched; the self-test's unique temporary root is removed after exit.
+  Recursive cleanup verifies the final absolute parent/name and rejects a reparse-point root.
+
+Five synthetic exports were generated successfully and visually reviewed: main, detail, settings,
+380-pixel-wide main and settings at 150% render scale. Text wraps without horizontal overflow;
+the footer remains visible and long settings scroll. Published examples:
+[main](windows-native-main.png), [detail](windows-native-detail.png), [settings](windows-native-settings.png).
+The user's screenshot and real session titles are not included in the repository.
+
+`git diff --check` passed. This update does not change `plugin/`, `macos/`, `LICENSE` or `NOTICE.md`.
+The bank SHA-256 remains `1c2cb74d372f9f0f30d0dabbb7b7a838660d2f769a88d0c8489e4c662e088c21`,
+matching the retained provenance. Sound remains owned by the existing backend, avoiding duplicate
+frontend sounds. Detection thresholds, prompts, scoring and ledger formats remain the same.
+The final bootstrap-error-feedback edit separately passed PowerShell parsing and isolated native
+smoke; its no-argument startup error dialog was reviewed in source rather than forced interactively.
+
+### Distribution and remote evidence
+
+The source archive and exact-commit CI results for this update are recorded with their checksum in
+the [0.5.3-port.2 release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.2).
+The release retains upstream ancestry and attribution. Build from a clean commit with
+`tools/build-windows.ps1`; archive entry-point verification uses a temporary path with Chinese
+characters and spaces, isolated homes and no real inference.
+
+### Current limits
+
+No real fingerprint inference, real-account panel startup, new hook trust or installation change
+was performed for this UI update. No existing Tk or Codex process was stopped. The earlier port's
+live installation/app-server checks below are historical evidence, not repeated UI-update tests.
+The 150% export uses WPF `RenderTargetBitmap`; it does not certify physical monitor DPI changes,
+multiple monitors, Windows ARM64, screen readers or notification delivery under all Windows policies.
+There is still no signed standalone EXE, Notification Center toast integration or automatic startup.
+Active server-side inference cancellation remains unverified.
+
+## Initial Windows port — 0.5.3-port.1
+
 Date: 2026-10-08 to 2026-10-09. Baseline: upstream 0.5.3,
 `ff0d7c0c8fdc8713273b6570b1ada1838eaad84c`.
 Scope and acceptance: [ADR 0001](adr/0001-windows-port.md). Source and algorithm:
 [Chinese analysis](ANALYSIS.zh-CN.md). Original author: [NOTICE](../NOTICE.md).
 
-## Native environment
+### Native environment
 
 Windows host, Python 3.11, Tk 8.6, Node.js available for JS parity,
 Codex desktop bundled CLI `0.162.0-alpha.2`. No WSL or Git Bash was used to run the detector.
 All installation tests use temporary `CODEX_HOME` / `NERFED_HOME`; the user's existing
 Codex configuration, hook trust, credentials and detector ledger are not modified.
 
-## Acceptance evidence
+### Acceptance evidence
 
 `python -X utf8 -m unittest discover -s tests -v`: **73 tests passed** on the native
 Windows host. The suite includes the original backend and statistical parity tests,
@@ -56,7 +121,7 @@ into a temporary Chinese/space path. Its checksum, original bank digest, license
 were verified. The extracted PowerShell `--version`, `selftest` (18/18 reference outputs), and
 `launch.ps1 --smoke-test` each exited 0 with isolated state and zero inference requests.
 
-## Remote acceptance
+### Remote acceptance
 
 [GitHub Actions run 37867014500](https://github.com/vvcchh0/is-gpt-nerfed/actions/runs/37867014500)
 tested implementation commit `d224996e1f41888ba23bf170b22eeaf3af416d21` successfully:
@@ -71,7 +136,7 @@ tested implementation commit `d224996e1f41888ba23bf170b22eeaf3af416d21` successf
 Python 3.10 uses `tomli` only for independent TOML parsing in a test; the runtime remains stdlib-only.
 Ubuntu/macOS runs validate shared backend compatibility and do not certify the Windows UI there.
 
-## Limits of this validation
+### Limits of this validation
 
 No real fingerprint inference was performed and no attribution accuracy was measured on the user's
 account. Match/mismatch, tools/refusals, busy turns and retry paths are tested against the offline fake
