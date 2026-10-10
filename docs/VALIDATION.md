@@ -1,5 +1,46 @@
 # Windows validation record
 
+## Internal-session filtering and performance analysis — 0.5.3-port.4, 2026-10-10
+
+Source: the user's request to optimize Guardian review filtering and determine whether fingerprint
+latency comes from local computation or the conversational probe. Implementation, benchmark and
+release integration used **GPT-6.1 Sol, xhigh**, without redelegation. The parent reviewed the final
+diff, regression cases, benchmark method and anonymous historical timing aggregates.
+Behavior and rationale: [session filtering](SESSION_FILTERING.zh-CN.md).
+Measurements, reproduction and statistical limits: [performance analysis](PERFORMANCE.zh-CN.md).
+
+### Local acceptance
+
+`python -X utf8 -m unittest discover -s tests -v`: **109 tests passed in 104.703 seconds**,
+exit 0 on native Windows/Python 3.11.2. The port.4 development portable ZIP was built before the
+run, so the compiled-package test exercised the updated archive rather than the earlier release.
+Development archives are acceptance snapshots; formal releases are rebuilt from clean committed HEAD.
+
+- Fifteen new isolated source-classification regressions cover old/new source spellings, structured
+  metadata, old schemas, same-named main sessions, user forks, stale ledgers, snapshot merging,
+  hook/tick/worker/manual probe eligibility and audit inclusion. A fixture with 151 newer internal
+  records still returns the requested 40 main sessions using one read connection.
+- Existing Python/JavaScript numerical parity, backend reliability, launchers, WPF/Tk and portable
+  tests passed. The compiled EXE/DLL reports port.4 / assembly `0.5.3.4`; the package exercises its
+  private runtime, offline 18-row selftest, synthetic UI, installer/wrapper resolution and Unicode paths.
+- A single real-database **read-only** compatibility check, with detector state isolated in a temporary
+  directory, returned 40 old-list entries including 34 Guardian records, versus 7 main entries and
+  zero recognized internal entries after filtering. The new query took 16.35 ms and produced no error
+  log. This is one snapshot, not a general performance benchmark.
+- The new standard-library benchmark ran successfully with the public fixture; its quick JSON
+  interface was also parsed and checked. Three-answer attribution plus verdict took a median 11.7 ms.
+  Existing local records, summarized without session identifiers or answers, place the median completed
+  three-fork probe at 189.7 seconds. The performance document keeps the two measurement scopes distinct.
+
+The ModelTrace bank digest remains
+`1c2cb74d372f9f0f30d0dabbb7b7a838660d2f769a88d0c8489e4c662e088c21`.
+Prompts, numerical scorer, app-server protocol and default probe settings were not changed.
+No new real inference, real-account installation or hook-trust changes were performed.
+
+Formal portable/source checksums, source commit and exact-commit cross-platform CI are recorded with
+the [port.4 release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.4).
+Historical records below retain their original validation scope.
+
 ## Compiled distribution and hook reliability — 0.5.3-port.3, 2026-10-09
 
 Scope: [ADR 0003](adr/0003-compiled-windows-distribution.md). Both implementation tracks

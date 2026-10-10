@@ -14,7 +14,7 @@ import unittest
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-PORTABLE = ROOT / "dist/IsGPTNerfed-Windows-0.5.3-port.3-win-x64.zip"
+PORTABLE = ROOT / "dist/IsGPTNerfed-Windows-0.5.3-port.4-win-x64.zip"
 
 
 @unittest.skipUnless(sys.platform == "win32", "compiled inbox Windows WPF")
@@ -70,12 +70,12 @@ class WindowsCompiledTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         metadata = json.loads(result.stdout)
-        self.assertEqual(metadata["version"], "0.5.3.3")
+        self.assertEqual(metadata["version"], "0.5.3.4")
         self.assertEqual(set(metadata["resources"]), {"Nerfed.Native.xaml", "Nerfed.face-ok.png",
                                                     "Nerfed.face-warn.png", "Nerfed.face-alert.png"})
         self.assertFalse((self.app / "windows").exists())
         self.assertFalse((self.app / "macos").exists())
-        self.assertIn("0.5.3-port.3", self.run_exe(self.app, "--version").stdout)
+        self.assertIn("0.5.3-port.4", self.run_exe(self.app, "--version").stdout)
 
     def test_compiled_offline_actions_need_no_source_compilation(self):
         self.assertIn("Native WPF smoke passed", self.run_exe(self.app, "--smoke-test").stdout)
@@ -111,6 +111,7 @@ class WindowsCompiledTests(unittest.TestCase):
                 archive.extractall(folder)
             app = folder / "IsGPTNerfed"
             manifest = json.loads((app / "build-manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["version"], "0.5.3-port.4")
             self.assertEqual(manifest["python"]["sha256"], "97dae5274cc54867065e8d5a3226e48c35017ed332a0fdb0e27d5b5821961297")
             self.assertTrue((app / "runtime/LICENSE.txt").is_file())
             resolved = self.run_exe(app, "--check-runtime", bundled=True).stdout.strip()

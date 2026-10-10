@@ -1,5 +1,16 @@
 # Changelog
 
+## Windows 0.5.3-port.4 — 2026-10-10
+
+- Unify session source classification across discovery, display and probe eligibility using Codex
+  metadata. Guardian and other internal subagent sessions no longer enter the main list or qualify
+  for manual/background probes; filtering does not rely on session titles.
+- Apply the visible-session limit after filtering so more than 40 internal records cannot crowd
+  user sessions out of the list. See [session filtering](docs/SESSION_FILTERING.zh-CN.md).
+- Add offline performance benchmarks and an analysis of historical three-sample fork timings,
+  separating local preparation/scoring from online inference. See [performance analysis](docs/PERFORMANCE.zh-CN.md).
+- Keep the ModelTrace bank, calibrated prompts and scorer unchanged.
+
 ## Windows 0.5.3-port.3 — 2026-10-09
 
 - Add a compiled WPF GUI EXE and panel DLL with embedded resources, plus an x64 portable ZIP

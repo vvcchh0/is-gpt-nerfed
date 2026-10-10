@@ -4,9 +4,10 @@
 > 首次注册插件运行 `install.ps1`。另提供源码包，需要 Python 3.10+ 和 Windows PowerShell 5.1；
 > 源码模式运行 `launch.cmd`，旧 Tk 面板可用 `launch.cmd --legacy-tk` 打开。
 > 详见 [具体操作顺序](docs/INTERACTION.zh-CN.md)、[Windows 使用说明](docs/WINDOWS.md)、[源码与原理分析](docs/ANALYSIS.zh-CN.md)、
+> [会话过滤规则](docs/SESSION_FILTERING.zh-CN.md)、[性能分析](docs/PERFORMANCE.zh-CN.md)、
 > [验收证据](docs/VALIDATION.md)。原作者为
 > [kiyoakii/is-gpt-nerfed](https://github.com/kiyoakii/is-gpt-nerfed)，MIT；归属见 [NOTICE.md](NOTICE.md)。
-> [Windows 下载页](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.3)提供便携包、源码 ZIP 与 SHA-256 校验文件。
+> [Windows 下载页](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.4)提供便携包、源码 ZIP 与 SHA-256 校验文件。
 > 下方保留原 macOS 文档。数字指纹是库内统计归因信号，主动探测使用联网 Codex 推理，
 > 具体检测边界见 Windows 使用说明。
 

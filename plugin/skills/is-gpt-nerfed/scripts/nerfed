@@ -546,7 +546,8 @@ def state_db_path() -> str | None:
     return cands[-1] if cands else None
 
 
-def db_query(sql: str, params=()) -> list[dict]:
+def db_query(sql: str, params=(), *, columns: str | None = None, optional_columns=(),
+             row_filter=None, limit: int | None = None) -> list[dict]:
     path = state_db_path()
     if not path:
         return []
@@ -555,7 +556,27 @@ def db_query(sql: str, params=()) -> list[dict]:
         con = sqlite3.connect(Path(path).as_uri() + "?mode=ro", uri=True, timeout=2)
         con.row_factory = sqlite3.Row
         try:
-            return [dict(r) for r in con.execute(sql, params).fetchall()]
+            if columns is not None:
+                # New Codex schemas expose structured source metadata. Select it when present
+                # without making older schemas lose the existing model / effort fields.
+                con.execute("BEGIN")
+                available = {r["name"] for r in con.execute("PRAGMA table_info(threads)")}
+                extra = [c for c in optional_columns if c in available]
+                sql = f"SELECT {columns}" + (", " + ", ".join(extra) if extra else "") + " " + sql
+            cursor = con.execute(sql, params)
+            if row_filter is None:
+                return [dict(r) for r in cursor.fetchall()]
+            out = []
+            # Keep one read snapshot while filtering, rather than reordering OFFSET pages
+            # across separate connections as active Codex threads update concurrently.
+            while rows := cursor.fetchmany(100):
+                for row in rows:
+                    record = dict(row)
+                    if row_filter(record):
+                        out.append(record)
+                        if limit is not None and len(out) >= limit:
+                            return out
+            return out
         finally:
             con.close()
     except Exception as e:
@@ -567,14 +588,87 @@ THREAD_COLS = "id, rollout_path, thread_source, cwd, model, reasoning_effort, ar
 # (originator distinguishes Codex Desktop / CLI sessions from one-shot `codex exec` runs)
 
 
+def db_threads(sql: str, params=(), *, detailed: bool = False, row_filter=None, limit: int | None = None) -> list[dict]:
+    optional = ("source", "parent_thread_id") + (("preview",) if detailed else ())
+    return db_query(sql, params, columns=THREAD_COLS, optional_columns=optional, row_filter=row_filter, limit=limit)
+
+
+def internal_source(source) -> bool:
+    """Recognize positive internal-source evidence, including SQLite and API spellings."""
+    if isinstance(source, str):
+        value = source.strip()
+        # The source column may contain a serialized enum, externally tagged object, or JSON string.
+        if value[:1] in ("{", '"'):
+            try:
+                decoded = json.loads(value)
+            except (ValueError, TypeError):
+                pass
+            else:
+                return internal_source(decoded)
+        normalized = re.sub(r"[^a-z0-9]", "", value.lower())
+        return normalized.startswith("subagent") or normalized == "guardianreview"
+    if isinstance(source, dict):
+        for key, value in source.items():
+            if internal_source(key):
+                return True
+            if key in ("source", "thread_source", "threadSource", "type", "kind") and internal_source(value):
+                return True
+    return False
+
+
+def rollout_session_meta(path: str | None) -> dict:
+    """Read only the bounded metadata header; missing / unfamiliar metadata remains eligible."""
+    if not path:
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8-sig") as f:
+            first = json.loads(f.readline(1 << 20))
+        payload = first.get("payload") if first.get("type") == "session_meta" else None
+        return payload if isinstance(payload, dict) else {}
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
+def internal_session(record: dict | None) -> bool:
+    record = record or {}
+    if any(internal_source(record.get(k)) for k in ("thread_source", "threadSource", "source")):
+        return True
+    meta = rollout_session_meta(record.get("rollout_path") or record.get("transcript_path"))
+    return any(internal_source(meta.get(k)) for k in ("thread_source", "threadSource", "source"))
+
+
+def internal_thread(tid: str, st: dict | None = None) -> bool:
+    st = st if st is not None else read_json(session_path(tid), {}) or {}
+    return st.get("kind") == "subagent" or internal_session(st) or internal_session(db_thread(tid))
+
+
+def require_probe_target(tid: str) -> dict:
+    """Reject known internal sessions before queuing, spawning, or recording a probe."""
+    row = db_thread(tid)
+    st = read_json(session_path(tid), {}) or {}
+    if st.get("kind") == "subagent" or internal_session(st) or internal_session(row):
+        raise SystemExit(f"session {tid} is an internal Codex session; choose a main session")
+    return row or {}
+
+
 def db_thread(tid: str) -> dict | None:
-    rows = db_query(f"SELECT {THREAD_COLS} FROM threads WHERE id = ?", (tid,))
+    rows = db_threads("FROM threads WHERE id = ?", (tid,))
     return rows[0] if rows else None
 
 
+def recent_main_threads(limit: int, since_ms: int | None = None, *, detailed: bool = False) -> list[dict]:
+    if limit <= 0:
+        return []
+    where, params = "FROM threads WHERE archived = 0", []
+    if since_ms is not None:
+        where += " AND updated_at_ms >= ?"
+        params.append(since_ms)
+    return db_threads(where + " ORDER BY updated_at_ms DESC, id DESC", params, detailed=detailed, limit=limit,
+                      row_filter=lambda row: not internal_session(row) and (not detailed or interactive_thread(row)))
+
+
 def db_recent_main_threads(limit: int = 25) -> list[dict]:
-    return db_query(f"SELECT {THREAD_COLS} FROM threads WHERE archived = 0 AND (thread_source IS NULL OR thread_source != 'subagent') "
-                    f"ORDER BY updated_at_ms DESC LIMIT ?", (limit,))
+    return recent_main_threads(limit)
 
 
 def db_recent_main_thread(cwd: str | None, exclude: str | None = None) -> dict | None:
@@ -735,7 +829,7 @@ def session_path(sid: str) -> str:
 
 def new_session(sid: str) -> dict:
     return {"sid": sid, "created": iso(), "created_ts": now(), "updated": iso(), "cwd": None, "model": None,
-            "transcript_path": None, "kind": "unknown", "thread_source": None, "parent_thread_id": None,
+            "transcript_path": None, "kind": "unknown", "thread_source": None, "source": None, "parent_thread_id": None,
             "link_method": None, "turns": 0, "last_probe_turn": 0, "last_probe_ts": 0.0,
             "last_nudge_turn": -999, "last_nudge_ts": 0.0, "tools": [], "evidence": [],
             "scan": new_scan_state(), "ended": None, "hook_events": 0,
@@ -780,8 +874,10 @@ def all_sessions() -> list[dict]:
 def link_session(st: dict) -> None:
     row = db_thread(st["sid"])
     if row:
-        st["thread_source"] = row.get("thread_source")
-        st["kind"] = "subagent" if row.get("thread_source") == "subagent" else "main"
+        for key in ("thread_source", "source", "parent_thread_id"):
+            if row.get(key) is not None:
+                st[key] = row[key]
+        st["kind"] = "subagent" if st.get("kind") == "subagent" or internal_session(row) or internal_session(st) else "main"
         st["link_method"] = "state-db"
         if not st.get("transcript_path") and row.get("rollout_path") and os.path.exists(row["rollout_path"]):
             st["transcript_path"] = row["rollout_path"]
@@ -789,7 +885,16 @@ def link_session(st: dict) -> None:
             st["model"] = row["model"]
         return
     if st.get("transcript_path") and os.path.exists(st["transcript_path"]):
-        st["kind"], st["link_method"] = "main", "transcript-path"
+        meta = rollout_session_meta(st["transcript_path"])
+        for key in ("thread_source", "source", "parent_thread_id"):
+            if meta.get(key) is not None:
+                st[key] = meta[key]
+        st["kind"], st["link_method"] = ("subagent" if internal_session(st) else "main"), "transcript-path"
+        return
+    if internal_session(st) or st.get("kind") == "subagent":
+        st["kind"] = "subagent"
+        return
+    if st.get("kind") == "main":
         return
     parent = db_recent_main_thread(st.get("cwd"), exclude=st["sid"])
     if parent:
@@ -802,6 +907,8 @@ ACTIVE_WINDOW_S = 15 * 60  # a thread with a hook event this recent is "active":
 
 
 def probe_due(st: dict, cfg: dict, account: str | None = None) -> bool:
+    if st.get("kind") == "subagent" or internal_session(st):
+        return False
     try:
         kind, n = parse_frequency(cfg.get("frequency"))
     except ValueError:
@@ -1271,6 +1378,7 @@ def resolve_originator(cfg: dict, codex_bin: str | None, thread_row: dict | None
 
 
 def run_fork_probe(thread_id: str, cfg: dict, queries: int | None = None, quiet: bool = False, originator: str | None = None) -> dict:
+    row = require_probe_target(thread_id)
     ensure_dirs()
     cb = codex_bin(cfg)
     if not cb:
@@ -1293,7 +1401,6 @@ def run_fork_probe(thread_id: str, cfg: dict, queries: int | None = None, quiet:
             if st.get("probe_running"):
                 st["probe_running"]["note"] = "waiting for the current turn to finish"
 
-    row = db_thread(thread_id) or {}
     orig = resolve_originator(cfg, cb, row, originator)
     rec["originator"] = orig
     rec["codex"] = codex_version(cb)
@@ -1475,6 +1582,8 @@ def transport_like(errors: list[str]) -> bool:
 
 
 def spawn_worker(thread_id: str, cfg: dict) -> bool:
+    if internal_thread(thread_id):
+        return False
     try:
         with open(WORKER_LOG, "a") as log:
             subprocess.Popen([sys.executable, "-X", "utf8", DGC_BIN, "worker", "--thread", thread_id], stdout=log, stderr=log,
@@ -1490,6 +1599,8 @@ def run_schedule(st: dict, cfg: dict, acct: dict, messages: list, via: str = "ho
     """The probe schedule for one main session (call it under the session's lock): launch a worker in mode auto,
     or queue a nudge in mode nudge. The Stop hook runs it after every turn; `tick` runs it for threads that are due
     but quiet. Returns True when a worker was launched."""
+    # Reclassify old ledgers on Stop / tick even when no new SessionStart arrives.
+    link_session(st)
     sid = st["sid"]
     running = st.get("probe_running")
     if running and not pid_alive(running.get("pid")):
@@ -1536,6 +1647,9 @@ def challenge_text(rec: dict, index: int) -> str:
 
 
 def start_self_probe(parent_id: str | None, side_id: str | None, cfg: dict, expected: str | None) -> int:
+    for tid in (parent_id, side_id):
+        if tid:
+            require_probe_target(tid)
     ensure_dirs()
     q = max(1, min(3, int(cfg.get("queries") or 3)))
     rng = random.Random()
@@ -1555,6 +1669,9 @@ def cmd_probe_submit_numbers(args) -> int:
         raise SystemExit("unknown self-answer probe id")
     if rec.get("status") != "open":
         raise SystemExit(f"probe {rec['id']} is already {rec['status']}")
+    for tid in (rec.get("thread_id"), rec.get("side_thread_id")):
+        if tid:
+            require_probe_target(tid)
     text = args.numbers
     if getattr(args, "numbers_file", None):
         with open(args.numbers_file, "r", encoding="utf-8") as f:
@@ -1597,7 +1714,8 @@ def resolve_thread(thread_arg: str | None) -> tuple[str | None, str]:
             continue
         if ts < cutoff:
             break
-        if e.get("event") in ("UserPromptSubmit", "Stop", "SessionStart") and e.get("cwd") == cwd:
+        if (e.get("event") in ("UserPromptSubmit", "Stop", "SessionStart") and e.get("cwd") == cwd
+                and e.get("sid") and not internal_thread(e["sid"])):
             return e.get("sid"), "recent-hook-event"
     row = db_recent_main_thread(cwd)
     return (row["id"], "recent-main-thread") if row else (None, "none")
@@ -1699,6 +1817,7 @@ def cmd_probe_now(args) -> int:
         tid, how = resolve_thread(args.thread)
     if not tid:
         raise SystemExit("cannot determine the session: pass --thread <id> (Codex exports CODEX_THREAD_ID to tool commands)")
+    require_probe_target(tid)
     mode = args.mode
     if mode == "auto":
         mode = "fork" if thread_is_persisted(tid) else "self"
@@ -1743,6 +1862,7 @@ def cmd_worker(args) -> int:
         print(f"{iso()} worker aborted: {e}")
     finally:
         with locked_session(args.thread) as st:
+            link_session(st)
             st["probe_running"] = None
     return 0
 
@@ -1763,7 +1883,8 @@ def cmd_tick(args) -> int:
             continue
         if now() - (parse_iso(st.get("updated")) or 0) >= ACTIVE_WINDOW_S:  # quiet for a while: whoever was here has left
             continue
-        if not (st.get("requested") or probe_due(st, cfg, acct["id"])) or not interactive_thread(db_thread(st["sid"])):
+        if (not (st.get("requested") or probe_due(st, cfg, acct["id"]))
+                or internal_thread(st["sid"], st) or not interactive_thread(db_thread(st["sid"]))):
             continue
         with locked_session(st["sid"]) as live:  # decide again under the lock: a hook may have run the schedule meanwhile
             if run_schedule(live, cfg, acct, [], via="tick"):
@@ -1841,6 +1962,13 @@ def cmd_hook(args) -> int:
         for k in ("cwd", "model", "transcript_path"):
             if payload.get(k):
                 st[k] = payload[k]
+        # Hook payloads may include a transcript path on every tool event. Inspect direct
+        # source fields here; SessionStart / Stop linking handles the rollout header.
+        if any(internal_source(payload.get(k)) for k in ("thread_source", "threadSource", "source")):
+            for k in ("thread_source", "source", "parent_thread_id"):
+                if payload.get(k) is not None:
+                    st[k] = payload[k]
+            st["kind"] = "subagent"
         if st["kind"] in ("unknown", "side") or ev == "SessionStart":
             link_session(st)
         if ev == "SessionStart":
@@ -1994,13 +2122,7 @@ def interactive_thread(row: dict | None) -> bool:
 
 
 def db_recent_threads_detailed(since_ms: int, limit: int = 40) -> list[dict]:
-    base = (f"FROM threads WHERE archived = 0 AND (thread_source IS NULL OR thread_source != 'subagent') "
-            f"AND (originator IS NULL OR originator NOT LIKE 'codex_exec%') "
-            f"AND updated_at_ms >= ? ORDER BY updated_at_ms DESC LIMIT ?")
-    rows = db_query(f"SELECT {THREAD_COLS}, preview {base}", (since_ms, limit))
-    if not rows:
-        rows = db_query(f"SELECT {THREAD_COLS} {base}", (since_ms, limit))
-    return rows
+    return recent_main_threads(limit, since_ms, detailed=True)
 
 
 def probe_line(p: dict) -> str:
@@ -2248,10 +2370,15 @@ def build_snapshot(cfg: dict, hours: float = 48.0) -> dict:
     for st in all_sessions():
         if st.get("kind") != "main":
             continue
+        row = db_thread(st["sid"])
+        if internal_session(st) or internal_session(row):
+            # An old kind=main ledger must not resurrect an internal DB / rollout record.
+            threads.pop(st["sid"], None)
+            continue
         upd = parse_iso(st.get("updated")) or 0
         if upd < cutoff and st["sid"] not in threads:
             continue
-        if st["sid"] not in threads and not interactive_thread(db_thread(st["sid"])):
+        if st["sid"] not in threads and not interactive_thread(row):
             continue
         t = threads.setdefault(st["sid"], {"id": st["sid"], "title": st["sid"][:12], "cwd": st.get("cwd"), "model": st.get("model"),
                                            "effort": None, "updated_ts": 0, "turns": 0, "turns_since_probe": 0, "due": False,
@@ -2819,7 +2946,7 @@ def rollout_for(thread: str | None, path: str | None) -> str:
     if thread:
         row = db_thread(thread)
         if not row:
-            rows = db_query(f"SELECT {THREAD_COLS} FROM threads WHERE id LIKE ? ORDER BY updated_at_ms DESC LIMIT 1", (thread + "%",))
+            rows = db_threads("FROM threads WHERE id LIKE ? ORDER BY updated_at_ms DESC LIMIT 1", (thread + "%",))
             row = rows[0] if rows else None
         if row and row.get("rollout_path"):
             return row["rollout_path"]
@@ -2852,14 +2979,8 @@ def cmd_audit(args) -> int:
     totals: dict = {}
     scanned = flagged = 0
     for p in files:
-        if not args.include_subagents:
-            try:
-                with open(p, "rb") as f:
-                    first = json.loads(f.readline() or b"{}")
-                if (first.get("payload") or {}).get("thread_source") == "subagent":
-                    continue
-            except Exception:
-                pass
+        if not args.include_subagents and internal_session({"rollout_path": p}):
+            continue
         scan, ev = scan_full(p, hidden)
         scanned += 1
         for e in ev:
@@ -3569,7 +3690,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(fn=cmd_scan)
     s = sub.add_parser("audit", help="scan every rollout modified in the last N days")
     s.add_argument("--days", type=float, default=7)
-    s.add_argument("--include-subagents", action="store_true")
+    s.add_argument("--include-subagents", action="store_true", help="include internal Codex sessions, including Guardian reviews")
     s.set_defaults(fn=cmd_audit)
     s = sub.add_parser("status", help="config + recently seen sessions")
     s.set_defaults(fn=cmd_status)

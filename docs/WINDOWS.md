@@ -11,6 +11,8 @@ Tcl/Tk is required only for the optional legacy panel; it is not in the bundled 
 
 Original author and licenses: [NOTICE.md](../NOTICE.md). 中文源码分析：[ANALYSIS.zh-CN.md](ANALYSIS.zh-CN.md).
 Interaction order: [中文操作指南](INTERACTION.zh-CN.md).
+Session visibility and eligibility: [会话过滤规则](SESSION_FILTERING.zh-CN.md).
+Offline benchmarks and historical probe timing: [性能分析](PERFORMANCE.zh-CN.md).
 Design: [ADR 0001](adr/0001-windows-port.md), [native UI decision](adr/0002-native-windows-ui.md),
 [compiled distribution](adr/0003-compiled-windows-distribution.md).
 Validation evidence: [VALIDATION.md](VALIDATION.md).
@@ -18,7 +20,7 @@ Validation evidence: [VALIDATION.md](VALIDATION.md).
 ## Install and open
 
 For normal use, download the **win-x64 ZIP** from the
-[Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.3),
+[Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.4),
 extract the whole directory, and double-click `IsGPTNerfed.exe`. Keep the DLL, `runtime/` and
 `plugin/` alongside it. For first installation run `install.ps1` in that directory, review the
 hook commands and trust them, then restart Codex. Installation and probing remain explicit actions.

@@ -5,8 +5,9 @@
 > The separate source package needs Python 3.10+ and Windows PowerShell 5.1; its Tk fallback remains
 > available with `launch.cmd --legacy-tk`. See [Windows guide](docs/WINDOWS.md),
 > [interaction order (中文)](docs/INTERACTION.zh-CN.md), [source analysis (中文)](docs/ANALYSIS.zh-CN.md),
+> [session filtering (中文)](docs/SESSION_FILTERING.zh-CN.md), [performance analysis (中文)](docs/PERFORMANCE.zh-CN.md),
 > and [validation](docs/VALIDATION.md).
-> Download portable/source ZIPs and checksums from the [Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.3).
+> Download portable/source ZIPs and checksums from the [Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.4).
 > Derived from [kiyoakii/is-gpt-nerfed](https://github.com/kiyoakii/is-gpt-nerfed), MIT;
 > original author and dependency credits are preserved in [NOTICE.md](NOTICE.md).
 > The original macOS documentation follows. Fingerprints are closed-set statistical signals,
