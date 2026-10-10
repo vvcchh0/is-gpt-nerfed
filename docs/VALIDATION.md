@@ -1,5 +1,63 @@
 # Windows validation record
 
+## Astra / Sol 6.1 ambiguity — 0.5.3-port.5, 2026-10-10
+
+Source: the user's Sol 6.1 → Astra observation and
+[upstream Issue #15](https://github.com/kiyoakii/is-gpt-nerfed/issues/15).
+Design and limits: [ADR 0004](adr/0004-conservative-fingerprint-resolution.md) and
+[reliability analysis](FINGERPRINT_RELIABILITY.zh-CN.md).
+The three implementation/research tracks used **GPT-6.1 Sol xhigh**, without redelegation.
+The parent reviewed backend/UI diffs, evidence provenance, results, and three actual synthetic screenshots.
+
+### Local acceptance
+
+`python -X utf8 -m unittest discover -s tests -v`: **125 tests passed in 186.698 seconds**,
+exit 0 on native Windows / Python 3.11.2. The port.5 development portable ZIP was built before
+the suite so its packaged backend, compiled EXE/DLL and private runtime were exercised.
+Formal release artifacts are rebuilt from clean committed HEAD, not the dirty development snapshot.
+
+- Seven new backend regressions cover exact `6.1` model normalization, neutral overlap for Astra/Sol,
+  unrelated listed/unlisted behavior, independent fingerprint/passive verdicts, reasons/timestamps,
+  absence of ambiguity notifications/halt, historical read-time projection without file changes,
+  and CLI/report provenance. Existing fake-fork/self/snapshot expectations now use the conservative rule.
+- Five new offline research tests cover grouping, incomplete/unusable groups, supplied response hashes,
+  compatibility with the unchanged production scorer, feature pair accounting and bank preservation.
+- WPF synthetic assertions actually construct the details view with a Sol declaration, neutral overlap,
+  labelled raw scores and a timed effort-change finding together. Tk report/notification regressions,
+  native interaction/lifecycle, narrow 150% DPI, compiled metadata and portable-runtime tests passed.
+  Actual main/detail/settings renders were visually reviewed and saved in the existing documentation paths.
+- The offline benchmark's AST extraction was updated for the independent verdict helpers; its quick
+  JSON run succeeds without real inference. Three quick samples are a compatibility smoke, not a
+  replacement for port.4's repeated timing study.
+- Independently verified all **15** retained upstream file hashes and all **four** research reports'
+  input/bank/scorer hashes. Git attributes preserve the hash-pinned external originals byte-for-byte
+  on Windows, Linux and macOS checkouts; the original MIT notice is retained.
+
+The fixed public candidate's original validator was inspected and actually run with an already
+available Python/NumPy runtime: **151.234 seconds, exit 0, integrity PASS**. It builds only an
+in-memory research candidate. Sol three-answer CV is 6/12 and holdout 1/3; Astra CV decreases
+from 12/12 to 9/12 when that candidate is added. Commands, original stdout and provenance are in
+[the research appendix](research/gpt61-sol/README.md).
+
+Exactly **two** user-authorized Common test chats were created, requested Sol high and Astra high,
+with three numeric-only turns each. Six valid answers and both three-answer groups map to Astra
+in both existing banks. Only those two chats' model/effort metadata was checked; both were archived
+after collection. This is an exploratory sample, with shared per-chat history and no independent
+holdout, not a production enrollment or serving-weight authentication. Separate private historical
+inspection is summarized anonymously in the reliability report; private sessions are not published.
+
+The production bank SHA-256 remains
+`1c2cb74d372f9f0f30d0dabbb7b7a838660d2f769a88d0c8489e4c662e088c21`.
+Numerical scorer, prompts, inference defaults and passive scan rules were not changed.
+Real-account schedules, settings, hook trust and installed plugin files were not modified by validation.
+Old probe/ledger evidence is preserved; `AMBIGUOUS` is a deliberate loss of claimed specificity,
+not a newly proven Sol classifier.
+
+Formal portable/source checksums, clean source commit, extracted-package acceptance and exact-commit
+four-job CI are recorded with the
+[port.5 release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.5).
+Historical records below retain their original scope and original numerical results.
+
 ## Internal-session filtering and performance analysis — 0.5.3-port.4, 2026-10-10
 
 Source: the user's request to optimize Guardian review filtering and determine whether fingerprint

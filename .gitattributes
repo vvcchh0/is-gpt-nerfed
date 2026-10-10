@@ -11,3 +11,5 @@ plugin/assets/modeltrace/unified_bank.json -text
 *.mjs text eol=lf
 *.png binary
 *.icns binary
+# Hash-pinned external research originals must remain byte-for-byte on every OS.
+docs/research/gpt61-sol/upstream/** -text

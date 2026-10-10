@@ -244,7 +244,7 @@ class SessionFilteringTests(unittest.TestCase):
         self.assertEqual(rc, 0, output)
         rows = list(dgc.iter_jsonl(dgc.PROBES_INDEX))
         self.assertEqual(len(rows), 1)
-        self.assertEqual((rows[0]["thread_id"], rows[0]["verdict"]), ("named-main", "MATCH"))
+        self.assertEqual((rows[0]["thread_id"], rows[0]["verdict"]), ("named-main", "AMBIGUOUS"))
 
     def test_audit_default_excludes_internal_and_flag_includes_them(self):
         self.rollout("guardian", thread_source="guardian_review")

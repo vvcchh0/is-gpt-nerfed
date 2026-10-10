@@ -1,0 +1,2001 @@
+{
+  "schema": "exploratory-fingerprint-report-v1",
+  "bank": {
+    "path": "D:\\AI\\common_workspace\\if-gpt-nerfed-main\\plugin\\assets\\modeltrace\\unified_bank.json",
+    "sha256": "1c2cb74d372f9f0f30d0dabbb7b7a838660d2f769a88d0c8489e4c662e088c21",
+    "model_count": 16,
+    "model_ids": [
+      "gpt-5.4",
+      "gpt-5.5",
+      "gpt-5.6-sol",
+      "gpt-5.6-terra",
+      "gpt-5.6-luna",
+      "gpt-6-astra",
+      "gpt-6-sol",
+      "gpt-6-luna",
+      "claude-haiku-4-5-20251001",
+      "claude-sonnet-4-6",
+      "claude-sonnet-5",
+      "claude-opus-4-6",
+      "claude-opus-4-7",
+      "claude-opus-4-8",
+      "claude-opus-5",
+      "claude-opus-5-5"
+    ]
+  },
+  "scorer": {
+    "path": "plugin\\skills\\is-gpt-nerfed\\scripts\\modeltrace_core.py",
+    "sha256": "86dd5f718e19764ff8e4817ad52406fa97ff8d818507405318bbe153a4f8a37e"
+  },
+  "inputs": [
+    {
+      "path": "docs\\research\\2026-10-10-codex-probes\\samples.json",
+      "sha256": "886ea66eaf30eab09d7065fe48a7ad08947a30c90adeccb431d6ea926f147d51"
+    }
+  ],
+  "scope": "Explicit offline input analysis; no model invocation, bank fitting, or production-bank writes.",
+  "limits": [
+    "Model labels are requested/declared provenance, not independent proof of serving weights.",
+    "Scores and probabilities are closed-set comparisons among bank labels; out-of-bank labels cannot be recognized.",
+    "Small samples and within-thread repeated turns are exploratory; differences do not establish independent fingerprint classes.",
+    "Language/format strata describe requested prompts; public environment mapping follows the pinned challenge suite.",
+    "Distances use Hellinger features only, while attribution also fuses ordered blocks; these are different diagnostics."
+  ],
+  "grouping": {
+    "rule": "Nonoverlapping chunks of 3, sorted by turn_index, within label/effort/split/input and condition_id or thread_alias; otherwise input order.",
+    "incomplete_group_sample_ids": []
+  },
+  "integrity": {
+    "response_hashes_checked": 0,
+    "declared_context_ids": 0,
+    "unique_declared_context_ids": 0
+  },
+  "single_summary": {
+    "records": 6,
+    "usable": 6,
+    "prediction_counts": {
+      "gpt-6-astra": 6
+    },
+    "mean_score_margin": 0.7930302701973689,
+    "in_bank_labeled_records": 3,
+    "top1_correct": 3,
+    "out_of_bank_labels": [
+      "gpt-6.1-sol"
+    ]
+  },
+  "three_answer_summary": {
+    "records": 2,
+    "usable": 2,
+    "prediction_counts": {
+      "gpt-6-astra": 2
+    },
+    "mean_score_margin": 0.7930302701973687,
+    "in_bank_labeled_records": 1,
+    "top1_correct": 1,
+    "out_of_bank_labels": [
+      "gpt-6.1-sol"
+    ]
+  },
+  "single_strata": [
+    {
+      "stratum": {
+        "label": "gpt-6-astra",
+        "effort": "high",
+        "split": "unspecified",
+        "language": "en",
+        "format": "unspecified"
+      },
+      "records": 1,
+      "usable": 1,
+      "prediction_counts": {
+        "gpt-6-astra": 1
+      },
+      "mean_score_margin": 0.862208979153843,
+      "in_bank_labeled_records": 1,
+      "top1_correct": 1,
+      "out_of_bank_labels": []
+    },
+    {
+      "stratum": {
+        "label": "gpt-6-astra",
+        "effort": "high",
+        "split": "unspecified",
+        "language": "zh",
+        "format": "unspecified"
+      },
+      "records": 2,
+      "usable": 2,
+      "prediction_counts": {
+        "gpt-6-astra": 2
+      },
+      "mean_score_margin": 0.658629585751075,
+      "in_bank_labeled_records": 2,
+      "top1_correct": 2,
+      "out_of_bank_labels": []
+    },
+    {
+      "stratum": {
+        "label": "gpt-6.1-sol",
+        "effort": "high",
+        "split": "unspecified",
+        "language": "en",
+        "format": "unspecified"
+      },
+      "records": 1,
+      "usable": 1,
+      "prediction_counts": {
+        "gpt-6-astra": 1
+      },
+      "mean_score_margin": 0.7866095973109033,
+      "in_bank_labeled_records": 0,
+      "top1_correct": null,
+      "out_of_bank_labels": [
+        "gpt-6.1-sol"
+      ]
+    },
+    {
+      "stratum": {
+        "label": "gpt-6.1-sol",
+        "effort": "high",
+        "split": "unspecified",
+        "language": "zh",
+        "format": "unspecified"
+      },
+      "records": 2,
+      "usable": 2,
+      "prediction_counts": {
+        "gpt-6-astra": 2
+      },
+      "mean_score_margin": 0.8960519366086586,
+      "in_bank_labeled_records": 0,
+      "top1_correct": null,
+      "out_of_bank_labels": [
+        "gpt-6.1-sol"
+      ]
+    }
+  ],
+  "three_answer_strata": [
+    {
+      "stratum": {
+        "label": "gpt-6-astra",
+        "effort": "high",
+        "split": "unspecified",
+        "language": "mixed",
+        "format": "unspecified"
+      },
+      "records": 1,
+      "usable": 1,
+      "prediction_counts": {
+        "gpt-6-astra": 1
+      },
+      "mean_score_margin": 0.7264893835519974,
+      "in_bank_labeled_records": 1,
+      "top1_correct": 1,
+      "out_of_bank_labels": []
+    },
+    {
+      "stratum": {
+        "label": "gpt-6.1-sol",
+        "effort": "high",
+        "split": "unspecified",
+        "language": "mixed",
+        "format": "unspecified"
+      },
+      "records": 1,
+      "usable": 1,
+      "prediction_counts": {
+        "gpt-6-astra": 1
+      },
+      "mean_score_margin": 0.85957115684274,
+      "in_bank_labeled_records": 0,
+      "top1_correct": null,
+      "out_of_bank_labels": [
+        "gpt-6.1-sol"
+      ]
+    }
+  ],
+  "singles": [
+    {
+      "id": "samples.json:0",
+      "input": "samples.json",
+      "label": "gpt-6.1-sol",
+      "effort": "high",
+      "language": "zh",
+      "format": "unspecified",
+      "split": "unspecified",
+      "condition": "unspecified",
+      "thread_alias": "sol_high",
+      "turn_index": 1,
+      "expected_count": 300,
+      "identity_independently_attested": null,
+      "context_id_sha256": null,
+      "accepted": true,
+      "parsed_count": 300,
+      "minimum_numbers": 165,
+      "exact_requested_count": true,
+      "text_sha256": "89632acdbbe9d7763af481c8abaa019b601fd8bc895a920d69c8b87106ec9fdf",
+      "label_present_in_bank": false,
+      "prediction": "gpt-6-astra",
+      "used_outputs": 1,
+      "score_margin": 1.6470171173185293,
+      "probability_margin": 0.9999843544883779,
+      "closed_set_probability": 0.9999905834073877,
+      "calibration": {
+        "queries": "1",
+        "beta": 7.277579699216447,
+        "cv_accuracy": 0.953125
+      },
+      "ranking": [
+        {
+          "model": "gpt-6-astra",
+          "score": 2.554125923872548,
+          "closed_set_probability": 0.9999905834073877,
+          "pooled_profile_js_similarity": 0.7254122274233958
+        },
+        {
+          "model": "gpt-5.4",
+          "score": 0.9071088065540189,
+          "closed_set_probability": 6.228919009797788e-06,
+          "pooled_profile_js_similarity": 0.7117003611110246
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "score": 0.7249082164575414,
+          "closed_set_probability": 1.6540444796271987e-06,
+          "pooled_profile_js_similarity": 0.7096037584594581
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "score": 0.6423220490579068,
+          "closed_set_probability": 9.068266906377419e-07,
+          "pooled_profile_js_similarity": 0.707455696555424
+        },
+        {
+          "model": "claude-opus-5-5",
+          "score": 0.5311658259728436,
+          "closed_set_probability": 4.038336676756437e-07,
+          "pooled_profile_js_similarity": 0.7038698050951222
+        },
+        {
+          "model": "gpt-6-sol",
+          "score": 0.3932238546772017,
+          "closed_set_probability": 1.479862537730369e-07,
+          "pooled_profile_js_similarity": 0.7076065340625661
+        },
+        {
+          "model": "gpt-5.6-terra",
+          "score": 0.2921319837646822,
+          "closed_set_probability": 7.091026766546996e-08,
+          "pooled_profile_js_similarity": 0.7064779972915365
+        },
+        {
+          "model": "gpt-5.5",
+          "score": -0.26138156109828875,
+          "closed_set_probability": 1.2626040627280347e-09,
+          "pooled_profile_js_similarity": 0.7012204912874964
+        },
+        {
+          "model": "claude-haiku-4-5-20251001",
+          "score": -0.29240940818320393,
+          "closed_set_probability": 1.007395890127429e-09,
+          "pooled_profile_js_similarity": 0.6849704112135776
+        },
+        {
+          "model": "gpt-6-luna",
+          "score": -0.30743417443424825,
+          "closed_set_probability": 9.030518936044309e-10,
+          "pooled_profile_js_similarity": 0.7005935500232914
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "score": -0.3386512688043989,
+          "closed_set_probability": 7.195277740865623e-10,
+          "pooled_profile_js_similarity": 0.6797991898606386
+        },
+        {
+          "model": "claude-opus-5",
+          "score": -0.5733038355354878,
+          "closed_set_probability": 1.3043726347279327e-10,
+          "pooled_profile_js_similarity": 0.6805308784861974
+        },
+        {
+          "model": "claude-opus-4-7",
+          "score": -0.7519132668872264,
+          "closed_set_probability": 3.555383404511664e-11,
+          "pooled_profile_js_similarity": 0.6313459106539656
+        },
+        {
+          "model": "claude-opus-4-6",
+          "score": -0.9093214902562234,
+          "closed_set_probability": 1.1307849255108561e-11,
+          "pooled_profile_js_similarity": 0.6954653133903832
+        },
+        {
+          "model": "claude-sonnet-5",
+          "score": -1.1354825070288999,
+          "closed_set_probability": 2.1805830267449893e-12,
+          "pooled_profile_js_similarity": 0.6327903702151174
+        },
+        {
+          "model": "claude-opus-4-8",
+          "score": -1.475089148128765,
+          "closed_set_probability": 1.8416519734965416e-13,
+          "pooled_profile_js_similarity": 0.656960121293907
+        }
+      ]
+    },
+    {
+      "id": "samples.json:1",
+      "input": "samples.json",
+      "label": "gpt-6.1-sol",
+      "effort": "high",
+      "language": "en",
+      "format": "unspecified",
+      "split": "unspecified",
+      "condition": "unspecified",
+      "thread_alias": "sol_high",
+      "turn_index": 2,
+      "expected_count": 300,
+      "identity_independently_attested": null,
+      "context_id_sha256": null,
+      "accepted": true,
+      "parsed_count": 300,
+      "minimum_numbers": 165,
+      "exact_requested_count": true,
+      "text_sha256": "e2d3cac355d732cbcf170313db4cfa44af41328d1aba410a503b04848a2449ee",
+      "label_present_in_bank": false,
+      "prediction": "gpt-6-astra",
+      "used_outputs": 1,
+      "score_margin": 0.7866095973109033,
+      "probability_margin": 0.9926707858855718,
+      "closed_set_probability": 0.9959220861287192,
+      "calibration": {
+        "queries": "1",
+        "beta": 7.277579699216447,
+        "cv_accuracy": 0.953125
+      },
+      "ranking": [
+        {
+          "model": "gpt-6-astra",
+          "score": 1.9241264268475515,
+          "closed_set_probability": 0.9959220861287192,
+          "pooled_profile_js_similarity": 0.7095117125178285
+        },
+        {
+          "model": "gpt-5.4",
+          "score": 1.1375168295366482,
+          "closed_set_probability": 0.003251300243147514,
+          "pooled_profile_js_similarity": 0.7005296241567861
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "score": 0.8848288790984105,
+          "closed_set_probability": 0.000516902139754307,
+          "pooled_profile_js_similarity": 0.693969546757842
+        },
+        {
+          "model": "gpt-6-sol",
+          "score": 0.7294101371322517,
+          "closed_set_probability": 0.00016679763153163533,
+          "pooled_profile_js_similarity": 0.6978588973837072
+        },
+        {
+          "model": "gpt-5.6-terra",
+          "score": 0.6708494577739913,
+          "closed_set_probability": 0.00010891865063089832,
+          "pooled_profile_js_similarity": 0.6939889551788094
+        },
+        {
+          "model": "claude-opus-5-5",
+          "score": 0.47246437910863304,
+          "closed_set_probability": 2.570892114626884e-05,
+          "pooled_profile_js_similarity": 0.6886593504231101
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "score": 0.20594254038972956,
+          "closed_set_probability": 3.6958262231282783e-06,
+          "pooled_profile_js_similarity": 0.6849151948095822
+        },
+        {
+          "model": "gpt-5.5",
+          "score": 0.13349538598547084,
+          "closed_set_probability": 2.1813941592030135e-06,
+          "pooled_profile_js_similarity": 0.6874916798842867
+        },
+        {
+          "model": "claude-haiku-4-5-20251001",
+          "score": 0.04674182212332001,
+          "closed_set_probability": 1.1602183495389002e-06,
+          "pooled_profile_js_similarity": 0.6748860894469
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "score": -0.02062871612833972,
+          "closed_set_probability": 7.105711172946283e-07,
+          "pooled_profile_js_similarity": 0.6720988460090851
+        },
+        {
+          "model": "gpt-6-luna",
+          "score": -0.060131971351728666,
+          "closed_set_probability": 5.330317276679768e-07,
+          "pooled_profile_js_similarity": 0.6828709834270044
+        },
+        {
+          "model": "claude-opus-4-6",
+          "score": -0.7755268268370763,
+          "closed_set_probability": 2.9219110511249675e-09,
+          "pooled_profile_js_similarity": 0.6769474262298962
+        },
+        {
+          "model": "claude-opus-4-7",
+          "score": -0.8174039035732482,
+          "closed_set_probability": 2.1543178020277416e-09,
+          "pooled_profile_js_similarity": 0.6132833528801584
+        },
+        {
+          "model": "claude-opus-5",
+          "score": -1.207271962961773,
+          "closed_set_probability": 1.2620827429031726e-10,
+          "pooled_profile_js_similarity": 0.6542006468470278
+        },
+        {
+          "model": "claude-sonnet-5",
+          "score": -1.3633442206473954,
+          "closed_set_probability": 4.05325444751807e-11,
+          "pooled_profile_js_similarity": 0.6134259786473155
+        },
+        {
+          "model": "claude-opus-4-8",
+          "score": -1.961068256496446,
+          "closed_set_probability": 5.231541636836498e-13,
+          "pooled_profile_js_similarity": 0.6286371833640422
+        }
+      ]
+    },
+    {
+      "id": "samples.json:2",
+      "input": "samples.json",
+      "label": "gpt-6.1-sol",
+      "effort": "high",
+      "language": "zh",
+      "format": "unspecified",
+      "split": "unspecified",
+      "condition": "unspecified",
+      "thread_alias": "sol_high",
+      "turn_index": 3,
+      "expected_count": 320,
+      "identity_independently_attested": null,
+      "context_id_sha256": null,
+      "accepted": true,
+      "parsed_count": 320,
+      "minimum_numbers": 176,
+      "exact_requested_count": true,
+      "text_sha256": "18977d865e68a987d36c3b1bbccac97bb3272dbc5d422ebbb4e2b570c5132cdb",
+      "label_present_in_bank": false,
+      "prediction": "gpt-6-astra",
+      "used_outputs": 1,
+      "score_margin": 0.14508675589878783,
+      "probability_margin": 0.448723784261274,
+      "closed_set_probability": 0.6881063534751528,
+      "calibration": {
+        "queries": "1",
+        "beta": 7.277579699216447,
+        "cv_accuracy": 0.953125
+      },
+      "ranking": [
+        {
+          "model": "gpt-6-astra",
+          "score": 1.4568188735449876,
+          "closed_set_probability": 0.6881063534751528,
+          "pooled_profile_js_similarity": 0.7692431217774782
+        },
+        {
+          "model": "gpt-5.4",
+          "score": 1.3117321176461998,
+          "closed_set_probability": 0.23938256921387882,
+          "pooled_profile_js_similarity": 0.7673094727136809
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "score": 1.1280134272174525,
+          "closed_set_probability": 0.062867891749372,
+          "pooled_profile_js_similarity": 0.7619164160605156
+        },
+        {
+          "model": "gpt-5.6-terra",
+          "score": 0.795481379123832,
+          "closed_set_probability": 0.005590155396495588,
+          "pooled_profile_js_similarity": 0.7601685001253211
+        },
+        {
+          "model": "claude-opus-5-5",
+          "score": 0.6306694804845242,
+          "closed_set_probability": 0.001684679533814515,
+          "pooled_profile_js_similarity": 0.752972441208428
+        },
+        {
+          "model": "gpt-6-sol",
+          "score": 0.6225884410745883,
+          "closed_set_probability": 0.001588459930566568,
+          "pooled_profile_js_similarity": 0.7589893077264807
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "score": 0.49210595158610704,
+          "closed_set_probability": 0.0006145704153382145,
+          "pooled_profile_js_similarity": 0.7524138017550103
+        },
+        {
+          "model": "gpt-5.5",
+          "score": 0.303955438894283,
+          "closed_set_probability": 0.00015627904518499547,
+          "pooled_profile_js_similarity": 0.7536452650779927
+        },
+        {
+          "model": "gpt-6-luna",
+          "score": -0.19586752726598333,
+          "closed_set_probability": 4.112954755384997e-06,
+          "pooled_profile_js_similarity": 0.7375700554473155
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "score": -0.20176864677005155,
+          "closed_set_probability": 3.94005948648957e-06,
+          "pooled_profile_js_similarity": 0.7198403809178257
+        },
+        {
+          "model": "claude-haiku-4-5-20251001",
+          "score": -0.39889011991034695,
+          "closed_set_probability": 9.385948055260576e-07,
+          "pooled_profile_js_similarity": 0.7225049072384295
+        },
+        {
+          "model": "claude-opus-4-6",
+          "score": -0.8573631330287068,
+          "closed_set_probability": 3.337509543385179e-08,
+          "pooled_profile_js_similarity": 0.7348471903517844
+        },
+        {
+          "model": "claude-opus-4-7",
+          "score": -1.0142594187709213,
+          "closed_set_probability": 1.0654525720353515e-08,
+          "pooled_profile_js_similarity": 0.6446333713949753
+        },
+        {
+          "model": "claude-opus-5",
+          "score": -1.1391931337146473,
+          "closed_set_probability": 4.292072362729847e-09,
+          "pooled_profile_js_similarity": 0.7007826474766871
+        },
+        {
+          "model": "claude-sonnet-5",
+          "score": -1.3169831091744857,
+          "closed_set_probability": 1.1769060086820922e-09,
+          "pooled_profile_js_similarity": 0.6501014888852816
+        },
+        {
+          "model": "claude-opus-4-8",
+          "score": -1.6170400209368319,
+          "closed_set_probability": 1.3254949962477176e-10,
+          "pooled_profile_js_similarity": 0.6765553904021525
+        }
+      ]
+    },
+    {
+      "id": "samples.json:3",
+      "input": "samples.json",
+      "label": "gpt-6-astra",
+      "effort": "high",
+      "language": "zh",
+      "format": "unspecified",
+      "split": "unspecified",
+      "condition": "unspecified",
+      "thread_alias": "astra_high",
+      "turn_index": 1,
+      "expected_count": 300,
+      "identity_independently_attested": null,
+      "context_id_sha256": null,
+      "accepted": true,
+      "parsed_count": 300,
+      "minimum_numbers": 165,
+      "exact_requested_count": true,
+      "text_sha256": "62560defee01ec18bfadd20e69b52b63ab643fc81401228ae398179e898c8672",
+      "label_present_in_bank": true,
+      "prediction": "gpt-6-astra",
+      "used_outputs": 1,
+      "score_margin": 0.6957623661160639,
+      "probability_margin": 0.983560433931445,
+      "closed_set_probability": 0.9898196609294021,
+      "calibration": {
+        "queries": "1",
+        "beta": 7.277579699216447,
+        "cv_accuracy": 0.953125
+      },
+      "ranking": [
+        {
+          "model": "gpt-6-astra",
+          "score": 1.715512982593149,
+          "closed_set_probability": 0.9898196609294021,
+          "pooled_profile_js_similarity": 0.7228215933823565
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "score": 1.019750616477085,
+          "closed_set_probability": 0.006259226997957091,
+          "pooled_profile_js_similarity": 0.7111299135387426
+        },
+        {
+          "model": "gpt-6-sol",
+          "score": 0.8968214918771799,
+          "closed_set_probability": 0.002558523138767216,
+          "pooled_profile_js_similarity": 0.7142004520043451
+        },
+        {
+          "model": "gpt-6-luna",
+          "score": 0.6484347236765675,
+          "closed_set_probability": 0.0004196961387500786,
+          "pooled_profile_js_similarity": 0.7067214764030518
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "score": 0.6301152197976,
+          "closed_set_probability": 0.00036731115430589444,
+          "pooled_profile_js_similarity": 0.703275239516007
+        },
+        {
+          "model": "gpt-5.5",
+          "score": 0.597345005483662,
+          "closed_set_probability": 0.0002893744355670046,
+          "pooled_profile_js_similarity": 0.711493428654077
+        },
+        {
+          "model": "claude-opus-5-5",
+          "score": 0.5786481142514511,
+          "closed_set_probability": 0.0002525611400570179,
+          "pooled_profile_js_similarity": 0.7084864358151604
+        },
+        {
+          "model": "gpt-5.4",
+          "score": 0.2530315667272054,
+          "closed_set_probability": 2.361667386465543e-05,
+          "pooled_profile_js_similarity": 0.7053355742112098
+        },
+        {
+          "model": "gpt-5.6-terra",
+          "score": 0.1170076317895442,
+          "closed_set_probability": 8.776063466243203e-06,
+          "pooled_profile_js_similarity": 0.7013033156836279
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "score": -0.25519977426390006,
+          "closed_set_probability": 5.846504641808314e-07,
+          "pooled_profile_js_similarity": 0.679842459796604
+        },
+        {
+          "model": "claude-haiku-4-5-20251001",
+          "score": -0.288994453657908,
+          "closed_set_probability": 4.571770340092322e-07,
+          "pooled_profile_js_similarity": 0.6804498394703171
+        },
+        {
+          "model": "claude-opus-4-6",
+          "score": -0.4105575804417971,
+          "closed_set_probability": 1.887428214168843e-07,
+          "pooled_profile_js_similarity": 0.7004527578923948
+        },
+        {
+          "model": "claude-opus-5",
+          "score": -0.7030521386846098,
+          "closed_set_probability": 2.2459931422267724e-08,
+          "pooled_profile_js_similarity": 0.6805130609616856
+        },
+        {
+          "model": "claude-opus-4-7",
+          "score": -1.3467950202973786,
+          "closed_set_probability": 2.073893715252505e-10,
+          "pooled_profile_js_similarity": 0.6216407391479262
+        },
+        {
+          "model": "claude-sonnet-5",
+          "score": -1.4641687473874796,
+          "closed_set_probability": 8.827009671712196e-11,
+          "pooled_profile_js_similarity": 0.632176504946018
+        },
+        {
+          "model": "claude-opus-4-8",
+          "score": -1.9878996379403706,
+          "closed_set_probability": 1.952104649128396e-12,
+          "pooled_profile_js_similarity": 0.6506149402578626
+        }
+      ]
+    },
+    {
+      "id": "samples.json:4",
+      "input": "samples.json",
+      "label": "gpt-6-astra",
+      "effort": "high",
+      "language": "en",
+      "format": "unspecified",
+      "split": "unspecified",
+      "condition": "unspecified",
+      "thread_alias": "astra_high",
+      "turn_index": 2,
+      "expected_count": 300,
+      "identity_independently_attested": null,
+      "context_id_sha256": null,
+      "accepted": true,
+      "parsed_count": 300,
+      "minimum_numbers": 165,
+      "exact_requested_count": true,
+      "text_sha256": "81b24c828d6c05153e40041f6b620290792cf0cb71ff45a4c189a5fd35c57f84",
+      "label_present_in_bank": true,
+      "prediction": "gpt-6-astra",
+      "used_outputs": 1,
+      "score_margin": 0.862208979153843,
+      "probability_margin": 0.9940953406292731,
+      "closed_set_probability": 0.995970931063877,
+      "calibration": {
+        "queries": "1",
+        "beta": 7.277579699216447,
+        "cv_accuracy": 0.953125
+      },
+      "ranking": [
+        {
+          "model": "gpt-6-astra",
+          "score": 1.7182723587911855,
+          "closed_set_probability": 0.995970931063877,
+          "pooled_profile_js_similarity": 0.6267111248057626
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "score": 0.8560633796373425,
+          "closed_set_probability": 0.0018755904346039584,
+          "pooled_profile_js_similarity": 0.6210250519590694
+        },
+        {
+          "model": "gpt-5.5",
+          "score": 0.7347063511840655,
+          "closed_set_probability": 0.0007754886452465976,
+          "pooled_profile_js_similarity": 0.6222194204196095
+        },
+        {
+          "model": "gpt-5.6-terra",
+          "score": 0.7187732441255837,
+          "closed_set_probability": 0.0006905848754944797,
+          "pooled_profile_js_similarity": 0.622040582549213
+        },
+        {
+          "model": "gpt-5.4",
+          "score": 0.6217701790656207,
+          "closed_set_probability": 0.0003409007390722656,
+          "pooled_profile_js_similarity": 0.6195818833405244
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "score": 0.580581212791489,
+          "closed_set_probability": 0.0002526071114064227,
+          "pooled_profile_js_similarity": 0.6156919275883098
+        },
+        {
+          "model": "gpt-6-sol",
+          "score": 0.30445292364145593,
+          "closed_set_probability": 3.386187434351887e-05,
+          "pooled_profile_js_similarity": 0.621537273278329
+        },
+        {
+          "model": "claude-opus-5-5",
+          "score": 0.2608614986551653,
+          "closed_set_probability": 2.465672447149929e-05,
+          "pooled_profile_js_similarity": 0.6115573962198013
+        },
+        {
+          "model": "claude-haiku-4-5-20251001",
+          "score": 0.22720158906552873,
+          "closed_set_probability": 1.9299650493687537e-05,
+          "pooled_profile_js_similarity": 0.6067852811447931
+        },
+        {
+          "model": "gpt-6-luna",
+          "score": 0.18575906270398476,
+          "closed_set_probability": 1.4274656583838252e-05,
+          "pooled_profile_js_similarity": 0.616473797241309
+        },
+        {
+          "model": "claude-opus-4-6",
+          "score": -0.10804078550174895,
+          "closed_set_probability": 1.6825893508734338e-06,
+          "pooled_profile_js_similarity": 0.6164500173739222
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "score": -0.47094965447126935,
+          "closed_set_probability": 1.199399197490316e-07,
+          "pooled_profile_js_similarity": 0.5949118299920684
+        },
+        {
+          "model": "claude-opus-5",
+          "score": -1.1031290270855485,
+          "closed_set_probability": 1.2047296443643607e-09,
+          "pooled_profile_js_similarity": 0.5869864460421776
+        },
+        {
+          "model": "claude-sonnet-5",
+          "score": -1.2411498172359359,
+          "closed_set_probability": 4.4122420991749653e-10,
+          "pooled_profile_js_similarity": 0.5577602168970544
+        },
+        {
+          "model": "claude-opus-4-7",
+          "score": -1.6063774594186504,
+          "closed_set_probability": 3.092546283134777e-11,
+          "pooled_profile_js_similarity": 0.5405909007646652
+        },
+        {
+          "model": "claude-opus-4-8",
+          "score": -1.6787950559482667,
+          "closed_set_probability": 1.8257118413777153e-11,
+          "pooled_profile_js_similarity": 0.5715075095829885
+        }
+      ]
+    },
+    {
+      "id": "samples.json:5",
+      "input": "samples.json",
+      "label": "gpt-6-astra",
+      "effort": "high",
+      "language": "zh",
+      "format": "unspecified",
+      "split": "unspecified",
+      "condition": "unspecified",
+      "thread_alias": "astra_high",
+      "turn_index": 3,
+      "expected_count": 320,
+      "identity_independently_attested": null,
+      "context_id_sha256": null,
+      "accepted": true,
+      "parsed_count": 320,
+      "minimum_numbers": 176,
+      "exact_requested_count": true,
+      "text_sha256": "3cf435f22c3cf6d7afa789a05d046d620ef6cfee78991816043604cf95226a63",
+      "label_present_in_bank": true,
+      "prediction": "gpt-6-astra",
+      "used_outputs": 1,
+      "score_margin": 0.6214968053860861,
+      "probability_margin": 0.9760788603035782,
+      "closed_set_probability": 0.986791953931738,
+      "calibration": {
+        "queries": "1",
+        "beta": 7.277579699216447,
+        "cv_accuracy": 0.953125
+      },
+      "ranking": [
+        {
+          "model": "gpt-6-astra",
+          "score": 1.8083815200746536,
+          "closed_set_probability": 0.986791953931738,
+          "pooled_profile_js_similarity": 0.7730579503527812
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "score": 1.1868847146885675,
+          "closed_set_probability": 0.010713093628159831,
+          "pooled_profile_js_similarity": 0.7624431984909189
+        },
+        {
+          "model": "claude-opus-5-5",
+          "score": 0.8164945897743043,
+          "closed_set_probability": 0.0007231945853908644,
+          "pooled_profile_js_similarity": 0.7577487519850296
+        },
+        {
+          "model": "gpt-5.6-terra",
+          "score": 0.7994238991519946,
+          "closed_set_probability": 0.0006387064828015102,
+          "pooled_profile_js_similarity": 0.7567561220366464
+        },
+        {
+          "model": "gpt-6-sol",
+          "score": 0.7933568296894076,
+          "closed_set_probability": 0.0006111188325925152,
+          "pooled_profile_js_similarity": 0.7613878014997514
+        },
+        {
+          "model": "gpt-5.4",
+          "score": 0.7615367863087529,
+          "closed_set_probability": 0.00048479131850503803,
+          "pooled_profile_js_similarity": 0.7583673515364592
+        },
+        {
+          "model": "gpt-5.5",
+          "score": 0.36339944565525545,
+          "closed_set_probability": 2.6742185488190263e-05,
+          "pooled_profile_js_similarity": 0.7532538181777888
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "score": 0.20951317590627277,
+          "closed_set_probability": 8.726136405601394e-06,
+          "pooled_profile_js_similarity": 0.7461807744805902
+        },
+        {
+          "model": "gpt-6-luna",
+          "score": -0.038120365519702146,
+          "closed_set_probability": 1.439289908317472e-06,
+          "pooled_profile_js_similarity": 0.7453564338055507
+        },
+        {
+          "model": "claude-haiku-4-5-20251001",
+          "score": -0.3086313744083804,
+          "closed_set_probability": 2.009868986361427e-07,
+          "pooled_profile_js_similarity": 0.7287581977782854
+        },
+        {
+          "model": "claude-opus-4-6",
+          "score": -0.638746282750033,
+          "closed_set_probability": 1.8188729966407654e-08,
+          "pooled_profile_js_similarity": 0.7437188054834917
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "score": -0.7227058866984322,
+          "closed_set_probability": 9.872760106644214e-09,
+          "pooled_profile_js_similarity": 0.716563333033192
+        },
+        {
+          "model": "claude-opus-5",
+          "score": -0.880180497408702,
+          "closed_set_probability": 3.1385014173231914e-09,
+          "pooled_profile_js_similarity": 0.717913136890943
+        },
+        {
+          "model": "claude-opus-4-7",
+          "score": -0.9935741106516749,
+          "closed_set_probability": 1.37508338457906e-09,
+          "pooled_profile_js_similarity": 0.6614027170820607
+        },
+        {
+          "model": "claude-sonnet-5",
+          "score": -1.4914784691393281,
+          "closed_set_probability": 3.6698320831769e-11,
+          "pooled_profile_js_similarity": 0.6658244558665696
+        },
+        {
+          "model": "claude-opus-4-8",
+          "score": -1.6655539746729566,
+          "closed_set_probability": 1.03385810960287e-11,
+          "pooled_profile_js_similarity": 0.691110435521104
+        }
+      ]
+    }
+  ],
+  "three_answer_groups": [
+    {
+      "sample_ids": [
+        "samples.json:3",
+        "samples.json:4",
+        "samples.json:5"
+      ],
+      "label": "gpt-6-astra",
+      "effort": "high",
+      "split": "unspecified",
+      "group_key": "astra_high",
+      "language": "mixed",
+      "format": "unspecified",
+      "label_present_in_bank": true,
+      "accepted": true,
+      "prediction": "gpt-6-astra",
+      "used_outputs": 3,
+      "score_margin": 0.7264893835519974,
+      "probability_margin": 0.999667889360233,
+      "closed_set_probability": 0.9998314967246398,
+      "calibration": {
+        "queries": "3",
+        "beta": 11.99999999999999,
+        "cv_accuracy": 1.0
+      },
+      "ranking": [
+        {
+          "model": "gpt-6-astra",
+          "score": 1.7473889538196625,
+          "closed_set_probability": 0.9998314967246398,
+          "pooled_profile_js_similarity": 0.8735336536478433
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "score": 1.020899570267665,
+          "closed_set_probability": 0.00016360736440674644,
+          "pooled_profile_js_similarity": 0.8575696736528603
+        },
+        {
+          "model": "gpt-6-sol",
+          "score": 0.6648770817360145,
+          "closed_set_probability": 2.28233621824114e-06,
+          "pooled_profile_js_similarity": 0.8567167096750954
+        },
+        {
+          "model": "gpt-5.5",
+          "score": 0.5651502674409943,
+          "closed_set_probability": 6.896836974030826e-07,
+          "pooled_profile_js_similarity": 0.8516651748104287
+        },
+        {
+          "model": "claude-opus-5-5",
+          "score": 0.5520014008936402,
+          "closed_set_probability": 5.890120750413367e-07,
+          "pooled_profile_js_similarity": 0.8470313160270994
+        },
+        {
+          "model": "gpt-5.4",
+          "score": 0.545446177367193,
+          "closed_set_probability": 5.444542964086051e-07,
+          "pooled_profile_js_similarity": 0.8514659513063307
+        },
+        {
+          "model": "gpt-5.6-terra",
+          "score": 0.5450682583557075,
+          "closed_set_probability": 5.41990771154973e-07,
+          "pooled_profile_js_similarity": 0.8458860393414598
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "score": 0.4734032028317872,
+          "closed_set_probability": 2.2935437754777686e-07,
+          "pooled_profile_js_similarity": 0.8365224643139966
+        },
+        {
+          "model": "gpt-6-luna",
+          "score": 0.2653578069536167,
+          "closed_set_probability": 1.8891716717459955e-08,
+          "pooled_profile_js_similarity": 0.8378464989638843
+        },
+        {
+          "model": "claude-haiku-4-5-20251001",
+          "score": -0.12347474633358656,
+          "closed_set_probability": 1.777695763179486e-10,
+          "pooled_profile_js_similarity": 0.8040176310281889
+        },
+        {
+          "model": "claude-opus-4-6",
+          "score": -0.3857815495645263,
+          "closed_set_probability": 7.635485747845334e-12,
+          "pooled_profile_js_similarity": 0.8333551055526938
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "score": -0.48295177181120047,
+          "closed_set_probability": 2.3791990344276392e-12,
+          "pooled_profile_js_similarity": 0.7856443200403662
+        },
+        {
+          "model": "claude-opus-5",
+          "score": -0.8954538877262866,
+          "closed_set_probability": 1.6852411779756693e-14,
+          "pooled_profile_js_similarity": 0.7867524451979377
+        },
+        {
+          "model": "claude-opus-4-7",
+          "score": -1.3155821967892347,
+          "closed_set_probability": 1.089304221065395e-16,
+          "pooled_profile_js_similarity": 0.7029332961602457
+        },
+        {
+          "model": "claude-sonnet-5",
+          "score": -1.3989323445875812,
+          "closed_set_probability": 4.006517790110509e-17,
+          "pooled_profile_js_similarity": 0.7219346046330603
+        },
+        {
+          "model": "claude-opus-4-8",
+          "score": -1.7774162228538646,
+          "closed_set_probability": 4.2686009591699455e-19,
+          "pooled_profile_js_similarity": 0.7484399768851205
+        }
+      ]
+    },
+    {
+      "sample_ids": [
+        "samples.json:0",
+        "samples.json:1",
+        "samples.json:2"
+      ],
+      "label": "gpt-6.1-sol",
+      "effort": "high",
+      "split": "unspecified",
+      "group_key": "sol_high",
+      "language": "mixed",
+      "format": "unspecified",
+      "label_present_in_bank": false,
+      "accepted": true,
+      "prediction": "gpt-6-astra",
+      "used_outputs": 3,
+      "score_margin": 0.85957115684274,
+      "probability_margin": 0.9999307850505219,
+      "closed_set_probability": 0.9999639210601846,
+      "calibration": {
+        "queries": "3",
+        "beta": 11.99999999999999,
+        "cv_accuracy": 1.0
+      },
+      "ranking": [
+        {
+          "model": "gpt-6-astra",
+          "score": 1.978357074755029,
+          "closed_set_probability": 0.9999639210601846,
+          "pooled_profile_js_similarity": 0.8620311448757585
+        },
+        {
+          "model": "gpt-5.4",
+          "score": 1.118785917912289,
+          "closed_set_probability": 3.3136009662707486e-05,
+          "pooled_profile_js_similarity": 0.8480653250789764
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "score": 0.9125835075911347,
+          "closed_set_probability": 2.790418745061478e-06,
+          "pooled_profile_js_similarity": 0.8415831527434049
+        },
+        {
+          "model": "gpt-5.6-terra",
+          "score": 0.5861542735541685,
+          "closed_set_probability": 5.5522933018456704e-08,
+          "pooled_profile_js_similarity": 0.8362791138762125
+        },
+        {
+          "model": "gpt-6-sol",
+          "score": 0.5817408109613472,
+          "closed_set_probability": 5.265886454486236e-08,
+          "pooled_profile_js_similarity": 0.8393471562833251
+        },
+        {
+          "model": "claude-opus-5-5",
+          "score": 0.5447665618553336,
+          "closed_set_probability": 3.378928034260773e-08,
+          "pooled_profile_js_similarity": 0.8305396164299051
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "score": 0.4467901803445811,
+          "closed_set_probability": 1.0427296429464718e-08,
+          "pooled_profile_js_similarity": 0.8267753513565964
+        },
+        {
+          "model": "gpt-5.5",
+          "score": 0.0586897545938217,
+          "closed_set_probability": 9.89858780899224e-11,
+          "pooled_profile_js_similarity": 0.8283665967516173
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "score": -0.18701621056759674,
+          "closed_set_probability": 5.1888163753362445e-12,
+          "pooled_profile_js_similarity": 0.7852635017172129
+        },
+        {
+          "model": "gpt-6-luna",
+          "score": -0.18781122435065342,
+          "closed_set_probability": 5.139549589213106e-12,
+          "pooled_profile_js_similarity": 0.8152698733595923
+        },
+        {
+          "model": "claude-haiku-4-5-20251001",
+          "score": -0.21485256865674363,
+          "closed_set_probability": 3.715336732557957e-12,
+          "pooled_profile_js_similarity": 0.7942759351227486
+        },
+        {
+          "model": "claude-opus-4-6",
+          "score": -0.8474038167073354,
+          "closed_set_probability": 1.876877736516169e-15,
+          "pooled_profile_js_similarity": 0.8088767647484815
+        },
+        {
+          "model": "claude-opus-4-7",
+          "score": -0.8611921964104653,
+          "closed_set_probability": 1.5906600586797157e-15,
+          "pooled_profile_js_similarity": 0.7027821554611916
+        },
+        {
+          "model": "claude-opus-5",
+          "score": -0.9732563107373027,
+          "closed_set_probability": 4.145256972344391e-16,
+          "pooled_profile_js_similarity": 0.7713150864695573
+        },
+        {
+          "model": "claude-sonnet-5",
+          "score": -1.2719366122835938,
+          "closed_set_probability": 1.1507181858035004e-17,
+          "pooled_profile_js_similarity": 0.7083096363315113
+        },
+        {
+          "model": "claude-opus-4-8",
+          "score": -1.684399141854014,
+          "closed_set_probability": 8.154673357273006e-20,
+          "pooled_profile_js_similarity": 0.737154557485093
+        }
+      ]
+    }
+  ],
+  "feature_differences": {
+    "feature": "355-dimensional standardized nuisance-projected Hellinger; unit vectors",
+    "within_label_effort": [
+      {
+        "label": "gpt-6-astra",
+        "effort": "high",
+        "samples": 3,
+        "pairs": 3,
+        "mean_pairwise_cosine_distance": 0.9263873181535822
+      },
+      {
+        "label": "gpt-6.1-sol",
+        "effort": "high",
+        "samples": 3,
+        "pairs": 3,
+        "mean_pairwise_cosine_distance": 0.771772482470054
+      }
+    ],
+    "between_label_effort": [
+      {
+        "left": {
+          "label": "gpt-6-astra",
+          "effort": "high"
+        },
+        "right": {
+          "label": "gpt-6.1-sol",
+          "effort": "high"
+        },
+        "pairs": 9,
+        "mean_pairwise_cosine_distance": 0.8605993022448913,
+        "sample_center_cosine": 0.32352905678930066
+      }
+    ],
+    "bank_model_center_cosines": [
+      {
+        "left": "claude-opus-4-7",
+        "right": "claude-opus-4-8",
+        "cosine": 0.6337966082259646
+      },
+      {
+        "left": "claude-sonnet-5",
+        "right": "claude-opus-4-8",
+        "cosine": 0.5935347902970587
+      },
+      {
+        "left": "claude-opus-4-8",
+        "right": "claude-opus-5",
+        "cosine": 0.5265862952558491
+      },
+      {
+        "left": "gpt-6-astra",
+        "right": "gpt-6-sol",
+        "cosine": 0.5057765889855413
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "gpt-6-sol",
+        "cosine": 0.48525665574459337
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "gpt-6-sol",
+        "cosine": 0.48264776595631087
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "gpt-5.6-sol",
+        "cosine": 0.47984036736322316
+      },
+      {
+        "left": "gpt-5.6-luna",
+        "right": "gpt-6-luna",
+        "cosine": 0.45613633052473657
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "gpt-6-luna",
+        "cosine": 0.42094282394298627
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "gpt-6-astra",
+        "cosine": 0.4123779346422651
+      },
+      {
+        "left": "claude-sonnet-5",
+        "right": "claude-opus-4-7",
+        "cosine": 0.4115350778184267
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "claude-opus-5-5",
+        "cosine": 0.4114006032835252
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "gpt-6-astra",
+        "cosine": 0.37893752349068577
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "gpt-5.6-sol",
+        "cosine": 0.37016156125394245
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "gpt-5.6-terra",
+        "cosine": 0.3685598690079943
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "gpt-5.6-luna",
+        "cosine": 0.36632062612940824
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "gpt-5.6-luna",
+        "cosine": 0.3611396673688683
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "gpt-5.6-terra",
+        "cosine": 0.35363444210856365
+      },
+      {
+        "left": "claude-sonnet-5",
+        "right": "claude-opus-5",
+        "cosine": 0.3462294242617765
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "gpt-5.6-luna",
+        "cosine": 0.3438800831321329
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "gpt-6-luna",
+        "cosine": 0.33986394457059177
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "gpt-6-sol",
+        "cosine": 0.33968369327025455
+      },
+      {
+        "left": "gpt-6-sol",
+        "right": "gpt-6-luna",
+        "cosine": 0.33501968640799246
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "gpt-6-sol",
+        "cosine": 0.33413670906404974
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "claude-opus-5-5",
+        "cosine": 0.333445842929512
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "claude-opus-5-5",
+        "cosine": 0.31655835014910694
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "gpt-6-luna",
+        "cosine": 0.3088025296427427
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "gpt-6-astra",
+        "cosine": 0.3076679709241574
+      },
+      {
+        "left": "claude-opus-4-7",
+        "right": "claude-opus-5",
+        "cosine": 0.3043235908208778
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "gpt-5.6-terra",
+        "cosine": 0.30129274621658986
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "gpt-5.5",
+        "cosine": 0.29914222523304124
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "gpt-6-luna",
+        "cosine": 0.2833772702256332
+      },
+      {
+        "left": "gpt-5.6-luna",
+        "right": "gpt-6-astra",
+        "cosine": 0.25858295246080365
+      },
+      {
+        "left": "gpt-5.6-luna",
+        "right": "gpt-6-sol",
+        "cosine": 0.2501206663756949
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "gpt-5.6-luna",
+        "cosine": 0.24814780497871586
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "gpt-6-astra",
+        "cosine": 0.22949134756052997
+      },
+      {
+        "left": "gpt-6-astra",
+        "right": "gpt-6-luna",
+        "cosine": 0.22359053003002916
+      },
+      {
+        "left": "claude-opus-4-6",
+        "right": "claude-opus-5-5",
+        "cosine": 0.2200518913720668
+      },
+      {
+        "left": "claude-haiku-4-5-20251001",
+        "right": "claude-sonnet-4-6",
+        "cosine": 0.1926531666935222
+      },
+      {
+        "left": "gpt-6-sol",
+        "right": "claude-opus-5-5",
+        "cosine": 0.1737633956792441
+      },
+      {
+        "left": "gpt-6-astra",
+        "right": "claude-opus-5-5",
+        "cosine": 0.17339785173104116
+      },
+      {
+        "left": "gpt-6-luna",
+        "right": "claude-opus-5-5",
+        "cosine": 0.16903695607598848
+      },
+      {
+        "left": "claude-sonnet-4-6",
+        "right": "claude-opus-4-6",
+        "cosine": 0.1662461139368611
+      },
+      {
+        "left": "gpt-5.6-luna",
+        "right": "claude-opus-5-5",
+        "cosine": 0.13362427452622996
+      },
+      {
+        "left": "claude-sonnet-4-6",
+        "right": "claude-opus-4-7",
+        "cosine": 0.11487375747349587
+      },
+      {
+        "left": "gpt-5.6-luna",
+        "right": "claude-opus-4-6",
+        "cosine": 0.09755703783031035
+      },
+      {
+        "left": "gpt-6-sol",
+        "right": "claude-opus-4-6",
+        "cosine": 0.09540526227966015
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "claude-opus-4-6",
+        "cosine": 0.09531672083999436
+      },
+      {
+        "left": "gpt-6-luna",
+        "right": "claude-opus-4-6",
+        "cosine": 0.07577302656481938
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "claude-opus-4-6",
+        "cosine": 0.0667496466776572
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "claude-opus-5-5",
+        "cosine": 0.013821194552612383
+      },
+      {
+        "left": "claude-haiku-4-5-20251001",
+        "right": "claude-opus-4-6",
+        "cosine": 0.004041996879055033
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "claude-haiku-4-5-20251001",
+        "cosine": 0.0038811948882798903
+      },
+      {
+        "left": "gpt-6-astra",
+        "right": "claude-opus-4-6",
+        "cosine": 0.002743908659363901
+      },
+      {
+        "left": "claude-sonnet-4-6",
+        "right": "claude-opus-4-8",
+        "cosine": -0.006431145962952843
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "claude-opus-4-6",
+        "cosine": -0.0385025061003414
+      },
+      {
+        "left": "gpt-6-astra",
+        "right": "claude-sonnet-4-6",
+        "cosine": -0.044078116707580405
+      },
+      {
+        "left": "claude-haiku-4-5-20251001",
+        "right": "claude-opus-4-7",
+        "cosine": -0.04689345040763228
+      },
+      {
+        "left": "gpt-6-sol",
+        "right": "claude-sonnet-4-6",
+        "cosine": -0.04805922037615164
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "claude-haiku-4-5-20251001",
+        "cosine": -0.06963369120872481
+      },
+      {
+        "left": "claude-haiku-4-5-20251001",
+        "right": "claude-opus-5-5",
+        "cosine": -0.06969538663058852
+      },
+      {
+        "left": "gpt-6-astra",
+        "right": "claude-haiku-4-5-20251001",
+        "cosine": -0.07042754336942626
+      },
+      {
+        "left": "gpt-5.6-luna",
+        "right": "claude-haiku-4-5-20251001",
+        "cosine": -0.07952296254571997
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "claude-haiku-4-5-20251001",
+        "cosine": -0.0852459774556392
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "claude-opus-4-6",
+        "cosine": -0.09167067616859974
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "claude-sonnet-4-6",
+        "cosine": -0.09552371971649479
+      },
+      {
+        "left": "gpt-6-sol",
+        "right": "claude-haiku-4-5-20251001",
+        "cosine": -0.11183268976040171
+      },
+      {
+        "left": "claude-opus-5",
+        "right": "claude-opus-5-5",
+        "cosine": -0.1257982024912689
+      },
+      {
+        "left": "claude-haiku-4-5-20251001",
+        "right": "claude-opus-5",
+        "cosine": -0.15198593904338714
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "claude-haiku-4-5-20251001",
+        "cosine": -0.17125924690991606
+      },
+      {
+        "left": "claude-opus-4-6",
+        "right": "claude-opus-5",
+        "cosine": -0.18353238991198267
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "claude-sonnet-4-6",
+        "cosine": -0.18353453238566134
+      },
+      {
+        "left": "gpt-6-luna",
+        "right": "claude-haiku-4-5-20251001",
+        "cosine": -0.1855608296281501
+      },
+      {
+        "left": "claude-haiku-4-5-20251001",
+        "right": "claude-opus-4-8",
+        "cosine": -0.18771759970792637
+      },
+      {
+        "left": "claude-sonnet-4-6",
+        "right": "claude-opus-5",
+        "cosine": -0.20256541355812108
+      },
+      {
+        "left": "claude-haiku-4-5-20251001",
+        "right": "claude-sonnet-5",
+        "cosine": -0.20900601069693095
+      },
+      {
+        "left": "gpt-5.6-luna",
+        "right": "claude-sonnet-4-6",
+        "cosine": -0.21143037843810297
+      },
+      {
+        "left": "claude-opus-4-6",
+        "right": "claude-opus-4-8",
+        "cosine": -0.21339954406758566
+      },
+      {
+        "left": "claude-sonnet-5",
+        "right": "claude-opus-4-6",
+        "cosine": -0.2188324288636761
+      },
+      {
+        "left": "gpt-6-luna",
+        "right": "claude-sonnet-4-6",
+        "cosine": -0.23090467990718203
+      },
+      {
+        "left": "claude-sonnet-4-6",
+        "right": "claude-opus-5-5",
+        "cosine": -0.24668230365313148
+      },
+      {
+        "left": "claude-sonnet-4-6",
+        "right": "claude-sonnet-5",
+        "cosine": -0.25221444644745333
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "claude-sonnet-4-6",
+        "cosine": -0.2585306746436349
+      },
+      {
+        "left": "claude-sonnet-5",
+        "right": "claude-opus-5-5",
+        "cosine": -0.2708064892000234
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "claude-sonnet-4-6",
+        "cosine": -0.2735423818564205
+      },
+      {
+        "left": "gpt-6-luna",
+        "right": "claude-sonnet-5",
+        "cosine": -0.2768106467234277
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "claude-opus-5",
+        "cosine": -0.3049087477246969
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "claude-opus-5",
+        "cosine": -0.30786572712387617
+      },
+      {
+        "left": "gpt-6-luna",
+        "right": "claude-opus-5",
+        "cosine": -0.31159995681291897
+      },
+      {
+        "left": "gpt-5.6-luna",
+        "right": "claude-opus-5",
+        "cosine": -0.31529106626367676
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "claude-opus-5",
+        "cosine": -0.3165808010674822
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "claude-sonnet-5",
+        "cosine": -0.3208947092763408
+      },
+      {
+        "left": "gpt-6-astra",
+        "right": "claude-opus-4-7",
+        "cosine": -0.3535529080422328
+      },
+      {
+        "left": "gpt-5.6-luna",
+        "right": "claude-sonnet-5",
+        "cosine": -0.3585820033482566
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "claude-opus-5",
+        "cosine": -0.376857490367924
+      },
+      {
+        "left": "claude-opus-4-6",
+        "right": "claude-opus-4-7",
+        "cosine": -0.3805309544178049
+      },
+      {
+        "left": "gpt-6-astra",
+        "right": "claude-opus-5",
+        "cosine": -0.3815909006958362
+      },
+      {
+        "left": "claude-opus-4-8",
+        "right": "claude-opus-5-5",
+        "cosine": -0.4050546995721006
+      },
+      {
+        "left": "gpt-6-sol",
+        "right": "claude-opus-5",
+        "cosine": -0.409264362374261
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "claude-opus-4-7",
+        "cosine": -0.4109786673209833
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "claude-sonnet-5",
+        "cosine": -0.4285723839911322
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "claude-sonnet-5",
+        "cosine": -0.43746858356567997
+      },
+      {
+        "left": "gpt-6-astra",
+        "right": "claude-sonnet-5",
+        "cosine": -0.4410829965620481
+      },
+      {
+        "left": "claude-opus-4-7",
+        "right": "claude-opus-5-5",
+        "cosine": -0.44437327059557935
+      },
+      {
+        "left": "gpt-6-luna",
+        "right": "claude-opus-4-8",
+        "cosine": -0.44474907413448356
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "claude-opus-4-8",
+        "cosine": -0.45004925585657535
+      },
+      {
+        "left": "gpt-6-sol",
+        "right": "claude-opus-4-7",
+        "cosine": -0.45893909469914945
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "claude-opus-4-7",
+        "cosine": -0.4634771175718747
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "claude-opus-4-8",
+        "cosine": -0.46780354443721384
+      },
+      {
+        "left": "gpt-5.6-terra",
+        "right": "claude-sonnet-5",
+        "cosine": -0.47350222798236136
+      },
+      {
+        "left": "gpt-6-sol",
+        "right": "claude-sonnet-5",
+        "cosine": -0.49991615962735475
+      },
+      {
+        "left": "gpt-5.6-luna",
+        "right": "claude-opus-4-8",
+        "cosine": -0.5077463534987215
+      },
+      {
+        "left": "gpt-5.4",
+        "right": "claude-opus-4-7",
+        "cosine": -0.5141622321560856
+      },
+      {
+        "left": "gpt-5.6-luna",
+        "right": "claude-opus-4-7",
+        "cosine": -0.5226544442296052
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "claude-opus-4-8",
+        "cosine": -0.5267625558854072
+      },
+      {
+        "left": "gpt-5.5",
+        "right": "claude-opus-4-7",
+        "cosine": -0.5611923110837205
+      },
+      {
+        "left": "gpt-6-luna",
+        "right": "claude-opus-4-7",
+        "cosine": -0.5703389402806402
+      },
+      {
+        "left": "gpt-6-astra",
+        "right": "claude-opus-4-8",
+        "cosine": -0.5760100639862993
+      },
+      {
+        "left": "gpt-5.6-sol",
+        "right": "claude-opus-4-8",
+        "cosine": -0.5900987125763659
+      },
+      {
+        "left": "gpt-6-sol",
+        "right": "claude-opus-4-8",
+        "cosine": -0.5959747146146247
+      }
+    ],
+    "sample_center_model_cosines": [
+      {
+        "label": "gpt-6-astra",
+        "effort": "high",
+        "samples": 3,
+        "ranking": [
+          {
+            "model": "gpt-6-astra",
+            "cosine": 0.46940484911985897
+          },
+          {
+            "model": "gpt-5.6-sol",
+            "cosine": 0.29624369003733425
+          },
+          {
+            "model": "gpt-6-sol",
+            "cosine": 0.2658058051979101
+          },
+          {
+            "model": "gpt-5.5",
+            "cosine": 0.21402370899367235
+          },
+          {
+            "model": "claude-opus-5-5",
+            "cosine": 0.19940706276118972
+          },
+          {
+            "model": "gpt-5.6-terra",
+            "cosine": 0.1772770837270271
+          },
+          {
+            "model": "gpt-5.4",
+            "cosine": 0.1717566995727212
+          },
+          {
+            "model": "gpt-5.6-luna",
+            "cosine": 0.1589011763212967
+          },
+          {
+            "model": "gpt-6-luna",
+            "cosine": 0.11737226609002865
+          },
+          {
+            "model": "claude-haiku-4-5-20251001",
+            "cosine": 0.05503971345394552
+          },
+          {
+            "model": "claude-opus-4-6",
+            "cosine": 0.034470547173518974
+          },
+          {
+            "model": "claude-sonnet-4-6",
+            "cosine": -0.038111295650227334
+          },
+          {
+            "model": "claude-opus-5",
+            "cosine": -0.176610338884869
+          },
+          {
+            "model": "claude-opus-4-7",
+            "cosine": -0.2647171190579251
+          },
+          {
+            "model": "claude-sonnet-5",
+            "cosine": -0.3006735244860163
+          },
+          {
+            "model": "claude-opus-4-8",
+            "cosine": -0.36551825638725155
+          }
+        ]
+      },
+      {
+        "label": "gpt-6.1-sol",
+        "effort": "high",
+        "samples": 3,
+        "ranking": [
+          {
+            "model": "gpt-6-astra",
+            "cosine": 0.5270836162937554
+          },
+          {
+            "model": "gpt-5.4",
+            "cosine": 0.3656096650526337
+          },
+          {
+            "model": "gpt-5.6-sol",
+            "cosine": 0.28438809407363547
+          },
+          {
+            "model": "gpt-6-sol",
+            "cosine": 0.23882178317193606
+          },
+          {
+            "model": "gpt-5.6-terra",
+            "cosine": 0.21660873081147852
+          },
+          {
+            "model": "gpt-5.6-luna",
+            "cosine": 0.1937506442384545
+          },
+          {
+            "model": "claude-opus-5-5",
+            "cosine": 0.18526265651113163
+          },
+          {
+            "model": "gpt-5.5",
+            "cosine": 0.11548703188969749
+          },
+          {
+            "model": "claude-haiku-4-5-20251001",
+            "cosine": 0.0495112808907895
+          },
+          {
+            "model": "claude-sonnet-4-6",
+            "cosine": 0.03599274252521723
+          },
+          {
+            "model": "gpt-6-luna",
+            "cosine": 0.007974389029351499
+          },
+          {
+            "model": "claude-opus-4-6",
+            "cosine": -0.07650916001263292
+          },
+          {
+            "model": "claude-opus-4-7",
+            "cosine": -0.21090761213873097
+          },
+          {
+            "model": "claude-opus-5",
+            "cosine": -0.2578977371728263
+          },
+          {
+            "model": "claude-sonnet-5",
+            "cosine": -0.3259411698281134
+          },
+          {
+            "model": "claude-opus-4-8",
+            "cosine": -0.3682212672059103
+          }
+        ]
+      }
+    ]
+  }
+}

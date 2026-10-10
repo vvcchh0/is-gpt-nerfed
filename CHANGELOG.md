@@ -1,5 +1,17 @@
 # Changelog
 
+## Windows 0.5.3-port.5 — 2026-10-10
+
+- Report overlapping GPT-6 Astra / GPT-6.1 Sol fingerprints as `AMBIGUOUS`; keep the
+  requested model distinct from the nearest candidate and do not claim an exact match.
+- Separate fingerprint resolution from passive model/effort/context findings, with the
+  original reason and timestamp visible. Preserve hard findings and raw historical records.
+- Apply the conservative interpretation to historical reports at read time. Ambiguity alone
+  neither raises downgrade alerts nor halts tools.
+- Add a reproducible reliability study: verified public 36+9 sample research and six local
+  high-effort replies from two subsequently archived test chats. No inferred/duplicated Sol
+  template, production bank, numerical scorer, probe prompts, or inference defaults changed.
+
 ## Windows 0.5.3-port.4 — 2026-10-10
 
 - Unify session source classification across discovery, display and probe eligibility using Codex

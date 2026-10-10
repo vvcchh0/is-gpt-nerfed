@@ -218,10 +218,10 @@ class LogicTests(unittest.TestCase):
         split = self.analysis(("gpt-5.6-sol", 0.80, 1.5), ("gpt-6-astra", 0.20, 0.6), ("gpt-5.5", 0.0, 0.0))
         self.assertEqual(dgc.assess("gpt-6-astra", split, [])["verdict"], "MISMATCH")
         self.assertEqual(dgc.assess("gpt-6-astra", split, [], {"mismatch_confidence": 0.9})["verdict"], "SUSPICIOUS")
-        # a weak MATCH is still a MATCH, flagged low confidence
+        # even a weak Astra candidate cannot distinguish the known overlap
         weak = self.analysis(("gpt-6-astra", 0.55, 1.0), ("gpt-5.6-sol", 0.45, 0.9))
         a = dgc.assess("gpt-6-astra", weak, [])
-        self.assertEqual((a["verdict"], a["confidence"]), ("MATCH", "low"))
+        self.assertEqual((a["verdict"], a["confidence"]), ("AMBIGUOUS", None))
         self.assertFalse(dgc.needs_confirmation("gpt-6-astra", [], {"confirm_uncertain": True}))
 
     def test_probe_due(self):
@@ -249,7 +249,7 @@ class ForkProbeTests(unittest.TestCase):
     def test_match(self):
         rc, out = run_cli(["probe", "now", "--mode", "fork", "--thread", "main-thread-1"], {"FAKE_CODEX_MODEL": "gpt-6-astra"})
         self.assertEqual(rc, 0, out)
-        self.assertIn("verdict: MATCH", out)
+        self.assertIn("verdict: AMBIGUOUS", out)
         self.assertIn("3/3 answers used", out)
         rec = dgc.read_json(dgc.probe_path(out.split("probe ")[1].split()[0]))
         self.assertEqual(rec["expected"], "gpt-6-astra")
@@ -257,7 +257,7 @@ class ForkProbeTests(unittest.TestCase):
         self.assertEqual(len(rec["forks"]), 3)
         self.assertTrue(all(f["usage"]["cached"] == 11000 for f in rec["forks"]))
         st = dgc.load_session("main-thread-1")
-        self.assertEqual(st["alerts"], [], "MATCH is silent in the thread by default")
+        self.assertEqual(st["alerts"], [], "AMBIGUOUS is neutral and silent in the thread")
         self.assertIsNone(st["probe_running"])
 
     def test_mismatch_is_a_downgrade_with_alert_and_optional_halt(self):
@@ -300,7 +300,7 @@ class ForkProbeTests(unittest.TestCase):
         open(marker, "w").close()
         rc, out = run_cli(["probe", "now", "--mode", "fork", "--thread", "main-thread-9"],
                           {"FAKE_CODEX_MODEL": "gpt-6-astra", "FAKE_CODEX_FAIL_ONCE": marker})
-        self.assertIn("verdict: MATCH", out)
+        self.assertIn("verdict: AMBIGUOUS", out)
         self.assertIn("retried ×1", out)
         self.assertFalse(os.path.exists(marker))
         rec = dgc.read_json(dgc.probe_path(out.split("probe ")[1].split()[0]))
@@ -321,12 +321,12 @@ class ForkProbeTests(unittest.TestCase):
         rec = dgc.read_json(dgc.probe_path(out.split("probe ")[1].split()[0]))
         self.assertEqual(rec["rounds"], 2)
         self.assertEqual(len(rec["forks"]), 6)
-        self.assertEqual(rec["verdict"], "MATCH")
+        self.assertEqual(rec["verdict"], "AMBIGUOUS")
 
     def test_live_turn_falls_back_to_previous_finished_turn(self):
         rc, out = run_cli(["probe", "now", "--mode", "fork", "--thread", "busy-thread-1"],
                           {"FAKE_CODEX_MODEL": "gpt-6-astra", "FAKE_CODEX_BUSY_MODE": "fallback"})
-        self.assertIn("verdict: MATCH", out)
+        self.assertIn("verdict: AMBIGUOUS", out)
         rec = dgc.read_json(dgc.probe_path(out.split("probe ")[1].split()[0]))
         self.assertEqual(rec["thread"]["last_turn"], "turn-prev")
         self.assertFalse(rec.get("waited_for_turn"))
@@ -339,7 +339,7 @@ class ForkProbeTests(unittest.TestCase):
         threading.Timer(2.5, lambda: os.remove(marker)).start()
         rc, out = run_cli(["probe", "now", "--mode", "fork", "--thread", "busy-thread-2"],
                           {"FAKE_CODEX_MODEL": "gpt-6-astra", "FAKE_CODEX_BUSY_MODE": "wait", "FAKE_CODEX_BUSY_UNTIL": marker})
-        self.assertIn("verdict: MATCH", out)
+        self.assertIn("verdict: AMBIGUOUS", out)
         rec = dgc.read_json(dgc.probe_path(out.split("probe ")[1].split()[0]))
         self.assertTrue(rec.get("waited_for_turn"))
         self.assertEqual(rec["thread"]["last_turn"], "turn-only")
@@ -391,7 +391,7 @@ class ForkProbeTests(unittest.TestCase):
             rc, out = run_cli(["probe", "now", "--mode", "fork", "--thread", "main-thread-14"],
                               {"FAKE_CODEX_MODEL": "gpt-6-astra", "FAKE_CODEX_THREAD_NO_MODEL": "1"})
         self.assertEqual(rc, 0, out)
-        self.assertIn("verdict: MATCH", out)
+        self.assertIn("verdict: AMBIGUOUS", out)
         rec = dgc.read_json(dgc.probe_path(out.split("probe ")[1].split()[0]))
         self.assertEqual((rec["expected"], rec["prediction"]), ("gpt-6-astra", "gpt-6-astra"))
         self.assertEqual(rec["thread"]["hinted"], ["model"], "only the model was missing; effort and cwd came from Codex")
@@ -517,7 +517,7 @@ class ForkProbeTests(unittest.TestCase):
             self.assertIn("will not count", out)
             self.assertIn("challenge 3/3", out)
             rc, out = run_cli(["probe", "submit-numbers", pid, "--numbers", astra[1]["text"]])
-        self.assertIn("verdict: MATCH", out)
+        self.assertIn("verdict: AMBIGUOUS", out)
         self.assertIn("2/3 answers used", out)
         rec = dgc.read_json(dgc.probe_path(pid))
         self.assertEqual(rec["mode"], "self")
@@ -695,7 +695,7 @@ class SnapshotReportTests(unittest.TestCase):
         self.assertIn("reverted", t["report_text"])
         self.assertTrue(snap["global_probes"])
         self.assertTrue(snap["global_report_text"].startswith("is-gpt-nerfed · Fresh session"))
-        self.assertIn("Earlier · Match", snap["global_report_text"])
+        self.assertIn("Earlier · Ambiguous", snap["global_report_text"])
 
     def test_probe_line_reads_like_the_panel(self):
         line = dgc.probe_line({"id": "abc", "verdict": "MISMATCH", "direction": "downgrade", "prediction": "gpt-5.6-luna", "probability": 0.91,
@@ -728,7 +728,7 @@ class SnapshotReportTests(unittest.TestCase):
         self.assertEqual(rec.get("topped_up"), 1, "one fork timed out, one replacement was run")
         self.assertEqual(rec["used_outputs"], 2, "the replacement answer counts")
         self.assertTrue(any("timed out" in e for e in rec["errors"]), rec["errors"])
-        self.assertEqual(rec["verdict"], "MATCH")
+        self.assertEqual(rec["verdict"], "AMBIGUOUS")
         dgc.save_config({**dgc.load_config(), "probe_timeout_s": 30})
 
     def test_config_file_keeps_only_choices_not_frozen_defaults(self):
@@ -752,7 +752,7 @@ class SnapshotReportTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         rec = dgc.read_json(dgc.probe_path([r for r in dgc.iter_jsonl(dgc.PROBES_INDEX) if r.get("thread_id") == "store-lag-1"][-1]["id"]))
         self.assertEqual(rec["retries"], 1, "one retry after Codex's store lagged its rollout")
-        self.assertEqual(rec["verdict"], "MATCH")
+        self.assertEqual(rec["verdict"], "AMBIGUOUS")
 
     def test_an_analysis_without_candidates_is_invalid(self):
         self.assertEqual(dgc.assess("gpt-6-astra", {"results": [], "used_outputs": 3}, [])["verdict"], "INVALID")
@@ -906,10 +906,10 @@ class SnapshotReportTests(unittest.TestCase):
     def test_failed_attempt_is_not_a_verdict(self):
         snap = json.loads(run_cli(["snapshot", "--json", "--demo"])[1])
         t = next(t for t in snap["threads"] if t["id"] == "oauth")
-        self.assertEqual(t["last_probe"]["verdict"], "MATCH", "the row keeps the last verdict")
+        self.assertEqual(t["last_probe"]["verdict"], "AMBIGUOUS", "the row keeps the last usable fingerprint result")
         self.assertEqual(t["last_failure"]["verdict"], "INVALID")
         self.assertTrue(t["last_failure"]["retryable"])
-        self.assertEqual([p["verdict"] for p in t["probes"]], ["MATCH"], "failed attempts stay out of the history")
+        self.assertEqual([p["verdict"] for p in t["probes"]], ["AMBIGUOUS"], "failed attempts stay out of the history")
         self.assertIn("Last attempt · Invalid · codex thread/fork timed out", t["report_text"])
         self.assertEqual(snap["last_verdict"]["id"], "a1b2c3d4e5")
         self.assertFalse(dgc.probe_row_valid({"status": "failed", "verdict": "INVALID"}))

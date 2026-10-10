@@ -13,14 +13,16 @@ Original author and licenses: [NOTICE.md](../NOTICE.md). 中文源码分析：[A
 Interaction order: [中文操作指南](INTERACTION.zh-CN.md).
 Session visibility and eligibility: [会话过滤规则](SESSION_FILTERING.zh-CN.md).
 Offline benchmarks and historical probe timing: [性能分析](PERFORMANCE.zh-CN.md).
+Fingerprint limits and Issue #15: [可靠性与 Sol/Astra 重叠](FINGERPRINT_RELIABILITY.zh-CN.md).
 Design: [ADR 0001](adr/0001-windows-port.md), [native UI decision](adr/0002-native-windows-ui.md),
-[compiled distribution](adr/0003-compiled-windows-distribution.md).
+[compiled distribution](adr/0003-compiled-windows-distribution.md),
+[conservative fingerprint resolution](adr/0004-conservative-fingerprint-resolution.md).
 Validation evidence: [VALIDATION.md](VALIDATION.md).
 
 ## Install and open
 
 For normal use, download the **win-x64 ZIP** from the
-[Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.4),
+[Windows release](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.5),
 extract the whole directory, and double-click `IsGPTNerfed.exe`. Keep the DLL, `runtime/` and
 `plugin/` alongside it. For first installation run `install.ps1` in that directory, review the
 hook commands and trust them, then restart Codex. Installation and probing remain explicit actions.
@@ -60,6 +62,14 @@ fresh-session section and separate settings page. Chinese UI labels preserve mod
 codes, stored records and CLI contracts. Click a session title to expand evidence; use its probe/retry
 button for inference. Fresh model/effort overrides affect only the next manual fresh-session probe.
 Refresh, diagnostics and settings navigation remain available while a probe runs.
+
+Port.5 treats an Astra fingerprint for a declared Astra or Sol 6.1 session as `AMBIGUOUS`:
+the current bank cannot reliably distinguish the two. The panel shows this neutrally and keeps
+raw closed-set scores in details. Logged passive setting/model changes remain separate alerts
+with their reasons and timestamps; they do not turn an ambiguous fingerprint into a confirmed
+model identity. Older probe files are preserved and interpreted under this rule when read.
+Reinstall from the updated directory and restart Codex to refresh the cached backend as well
+as the frontend. No history reset or new probe is needed to reinterpret existing records.
 
 Settings use an explicit save action. Session frequency and fresh-session frequency are distinct;
 reminder mode controls session scheduling, not the fresh heartbeat. Use manual for both frequencies

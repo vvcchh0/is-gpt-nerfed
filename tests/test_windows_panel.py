@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WINDOWS_DIR = ROOT / "windows"
 sys.path.insert(0, str(WINDOWS_DIR))
 
-from app import BackendClient, BackendError, CommandOutput, PanelController, tray_notifications  # noqa: E402
+from app import BackendClient, BackendError, CommandOutput, PanelApp, PanelController, probe_presentation, tray_notifications  # noqa: E402
 
 
 class BackendClientTests(unittest.TestCase):
@@ -71,6 +71,63 @@ class BackendClientTests(unittest.TestCase):
 
 
 class ControllerTests(unittest.TestCase):
+    @staticmethod
+    def ambiguous_probe(**overrides):
+        return {"id": "sol-61", "expected": "gpt-6.1-sol", "prediction": "gpt-6-astra", "probability": 1.0,
+                "verdict": "AMBIGUOUS", "fingerprint_verdict": "AMBIGUOUS", "fingerprint_resolution": "overlap",
+                "fingerprint_group": ["gpt-6-astra", "gpt-6.1-sol"],
+                "results": [{"model": "gpt-6-astra", "probability": 1.0}], **overrides}
+
+    def test_ambiguous_fingerprint_is_neutral_and_raw_candidate_is_labeled(self):
+        probe = self.ambiguous_probe()
+        text = probe_presentation(probe)
+        self.assertIn("Declared model: gpt-6.1-sol", text)
+        self.assertIn("Fingerprint: Astra / Sol 6.1 · not distinguishable", text)
+        self.assertIn("closed-set similarity scores (not identity confidence)", text)
+        self.assertNotIn("Fingerprint: MATCH", text)
+        self.assertNotIn("Passive events", text)
+        self.assertEqual(PanelApp._row_status({"last_probe": probe}), "AMBIGUOUS")
+        snapshot = {"config": {"notify": True, "notify_on_ok": True}, "last_verdict": probe,
+                    "overall": {"status": "ok", "downgraded": 0, "suspicious": 0}}
+        self.assertEqual(tray_notifications(snapshot, ("ok", 0, 0), "old")[0], [])
+
+    def test_passive_alert_keeps_independent_ambiguous_fingerprint_and_evidence(self):
+        probe = self.ambiguous_probe(verdict="DOWNGRADED!", is_downgrade=True, verdict_basis="passive",
+                                     passive_reasons=[{"kind": "silent_effort_change", "detail": "high → low",
+                                                       "ts": "2026-10-10T10:00:00Z"}])
+        text = probe_presentation(probe)
+        self.assertIn("Fingerprint: Astra / Sol 6.1 · not distinguishable", text)
+        self.assertIn("Passive events: Reasoning effort change alert", text)
+        self.assertIn("high → low · 2026-10-10T10:00:00Z", text)
+        self.assertEqual(PanelApp._row_status({"alert": True, "last_probe": probe}), "REASONING EFFORT CHANGE ALERT")
+        snapshot = {"config": {"notify": True}, "last_verdict": probe,
+                    "overall": {"status": "alert", "downgraded": 1, "suspicious": 0, "message": "1 alert"}}
+        self.assertEqual(tray_notifications(snapshot, ("ok", 0, 0), "old")[0],
+                         [("Reasoning effort change alert", "1 alert")])
+        probe["passive_reasons"].append({"kind": "context_window_change", "detail": "256000 → 128000", "ts": "later"})
+        self.assertIn("Passive events: Mixed passive alert", probe_presentation(probe))
+
+    def test_unlisted_and_legacy_results_remain_readable(self):
+        unlisted = {"verdict": "UNLISTED", "expected": "future-model", "prediction": "gpt-6-astra", "probability": 1.0}
+        text = probe_presentation(unlisted)
+        self.assertIn("UNLISTED · attribution unavailable", text)
+        self.assertNotIn("100%", text)
+        self.assertEqual(PanelApp._row_status({"last_probe": unlisted}), "UNLISTED")
+        legacy = {"verdict": "DOWNGRADED!", "expected": "gpt-6-astra"}
+        self.assertIn("not independently recorded", probe_presentation(legacy))
+        self.assertIn("did not save separate reasons", probe_presentation(legacy))
+        self.assertEqual(PanelApp._row_status({"last_probe": {"verdict": "MATCH"}}), "MATCH")
+
+    def test_details_preserve_recorded_report_and_event_history(self):
+        panel = PanelApp.__new__(PanelApp)
+        panel._last_operation = ""
+        panel._write_report = mock.Mock()
+        panel._render_details({"kind": "thread", "model": "gpt-6.1-sol", "last_probe": self.ambiguous_probe(),
+                               "report_text": "original verdict MISMATCH\nEvidence · high → low · old timestamp"})
+        text = panel._write_report.call_args.args[0]
+        self.assertIn("not distinguishable", text)
+        self.assertIn("original verdict MISMATCH\nEvidence · high → low · old timestamp", text)
+
     def test_tray_notices_follow_notify_and_notify_on_ok(self):
         prev = ("ok", 0, 0)
         alert = {"config": {"notify": True, "notify_on_ok": False},

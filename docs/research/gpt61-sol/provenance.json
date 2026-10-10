@@ -1,0 +1,115 @@
+{
+  "source_repository": "https://github.com/7and1/ModelTrace",
+  "upstream_repository": "https://github.com/xqy2006/ModelTrace",
+  "pull_request": "https://github.com/xqy2006/ModelTrace/pull/28",
+  "source_commit": "1369ca7afca83db354eac5752d1e23f51bafd1b5",
+  "base_commit": "d4131b30243dfa05e70180b5eedde742103f1d73",
+  "license": "MIT; retained verbatim in upstream/LICENSE",
+  "files": [
+    {
+      "path": "docs/research/gpt61-sol/upstream/data/research/gpt-6.1-sol-2026-10-02/README.md",
+      "upstream_path": "data/research/gpt-6.1-sol-2026-10-02/README.md",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/data/research/gpt-6.1-sol-2026-10-02/README.md",
+      "sha256": "b7c32980d5053488b3262a4103f6a72a525dc0ff5f5c67e598f0802adb338863",
+      "bytes": 4477
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/data/research/gpt-6.1-sol-2026-10-02/enrollment.jsonl",
+      "upstream_path": "data/research/gpt-6.1-sol-2026-10-02/enrollment.jsonl",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/data/research/gpt-6.1-sol-2026-10-02/enrollment.jsonl",
+      "sha256": "cb30f94f7e075b636c1cf1092b2238e4282c7aa8493f2f84fd144a52bbf23f1c",
+      "bytes": 324272
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/data/research/gpt-6.1-sol-2026-10-02/holdout.jsonl",
+      "upstream_path": "data/research/gpt-6.1-sol-2026-10-02/holdout.jsonl",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/data/research/gpt-6.1-sol-2026-10-02/holdout.jsonl",
+      "sha256": "faaa5e11c58051fd4a6558117e6c8904922a4dace99fb9d9eca21d386905aa31",
+      "bytes": 36535
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/data/research/gpt-6.1-sol-2026-10-02/failed-attempts.jsonl",
+      "upstream_path": "data/research/gpt-6.1-sol-2026-10-02/failed-attempts.jsonl",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/data/research/gpt-6.1-sol-2026-10-02/failed-attempts.jsonl",
+      "sha256": "18b85aad5a53bc163861a2b2cbe438f0419355ab972a8dd84ea4a0d4bc69f3ed",
+      "bytes": 10082
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/data/research/gpt-6.1-sol-2026-10-02/collection.json",
+      "upstream_path": "data/research/gpt-6.1-sol-2026-10-02/collection.json",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/data/research/gpt-6.1-sol-2026-10-02/collection.json",
+      "sha256": "e5cb16762033cfde97b18c556ec2be9a5638d9af7ec9abdd5127b347a4466200",
+      "bytes": 2656
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/data/research/gpt-6.1-sol-2026-10-02/validation.json",
+      "upstream_path": "data/research/gpt-6.1-sol-2026-10-02/validation.json",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/data/research/gpt-6.1-sol-2026-10-02/validation.json",
+      "sha256": "31be1135ab2f1a1fa470ff49b5ba90f77a4a2276ec2f404943128c2e9e6022a4",
+      "bytes": 12921
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/data/research/gpt-6.1-sol-2026-10-02/validate.py",
+      "upstream_path": "data/research/gpt-6.1-sol-2026-10-02/validate.py",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/data/research/gpt-6.1-sol-2026-10-02/validate.py",
+      "sha256": "aa31d97e2b326d85b20795ba41ef68bdea42b091cbdbd28577080a4f14c25e0e",
+      "bytes": 6164
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/data/gpt_reference.jsonl",
+      "upstream_path": "data/gpt_reference.jsonl",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/data/gpt_reference.jsonl",
+      "sha256": "b87e5630286308fdcec0893b89873635bf274b64a5269f41039eb46e66d3793f",
+      "bytes": 2460852
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/data/claude_reference.jsonl",
+      "upstream_path": "data/claude_reference.jsonl",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/data/claude_reference.jsonl",
+      "sha256": "7cfe396406f62c83dd797a354c4ea6b4a13f90f938480c2ab80f395fbfc462f2",
+      "bytes": 2761220
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/data/unified_bank.json",
+      "upstream_path": "data/unified_bank.json",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/data/unified_bank.json",
+      "sha256": "e514c76928ea38d23bc0f14d3935f23c97b1efb6d96b18a19bdc88ad2d830536",
+      "bytes": 882659
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/bank_builder.py",
+      "upstream_path": "bank_builder.py",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/bank_builder.py",
+      "sha256": "d30664990e69cdf54766197701cf28669cf3d8aa61457191bb2d6aa0745f4e36",
+      "bytes": 13408
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/fingerprint.py",
+      "upstream_path": "fingerprint.py",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/fingerprint.py",
+      "sha256": "387fe5c44cc5f859995432267b0d3b462fc26e82419fc22e3ee7f36cc2502d98",
+      "bytes": 13052
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/challenge_suite.py",
+      "upstream_path": "challenge_suite.py",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/challenge_suite.py",
+      "sha256": "aeebf20878ce11864c5cb7b1f6c0c7c2cf6dcfbb934244ff868b369e08a15032",
+      "bytes": 7010
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/static/fingerprint-core.js",
+      "upstream_path": "static/fingerprint-core.js",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/static/fingerprint-core.js",
+      "sha256": "83fa5bd611e18f8339122582335123c8ea168ed242298bb31f4e363abeeb6e4a",
+      "bytes": 8988
+    },
+    {
+      "path": "docs/research/gpt61-sol/upstream/LICENSE",
+      "upstream_path": "LICENSE",
+      "url": "https://raw.githubusercontent.com/7and1/ModelTrace/1369ca7afca83db354eac5752d1e23f51bafd1b5/LICENSE",
+      "sha256": "238afb57e498990742f84b9ce6167b4e256ac06104a9938ce953bc41c14bea51",
+      "bytes": 1064
+    }
+  ]
+}

@@ -22,3 +22,11 @@ not an official OpenAI product. The original project name and Codex plugin ident
 
 The Windows port changes platform integration and presentation. It does not retrain the bank,
 replace reference prompts, or claim independently measured attribution accuracy.
+
+The Issue #15 research appendix retains the public Sol experiment contributed by
+[7and1](https://github.com/xqy2006/ModelTrace/pull/28), fixed at commit
+`1369ca7afca83db354eac5752d1e23f51bafd1b5`, and its required ModelTrace baseline/source files.
+The original MIT notice (Copyright (c) 2026 xqy2006) is retained in
+[the research license](docs/research/gpt61-sol/upstream/LICENSE). File-level source URLs and
+SHA-256 digests are recorded in [research provenance](docs/research/gpt61-sol/provenance.json).
+These research inputs are separate from the unchanged production bank.

@@ -29,6 +29,61 @@ EFFORTS = ("", "none", "minimal", "low", "medium", "high", "xhigh", "max", "ultr
 WINDOWS_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 
+def fingerprint_verdict(probe: dict[str, Any]) -> str:
+    return str(probe.get("fingerprint_verdict") or probe.get("verdict") or "")
+
+
+def passive_alert_label(probe: dict[str, Any]) -> str:
+    """Describe recorded passive evidence without treating a fingerprint candidate as identity."""
+    def kind_label(kind: str) -> str:
+        return next((label for token, label in (("effort", "Reasoning effort change"), ("model", "Model identifier change"),
+                                                ("context", "Context window change"), ("tier", "Service tier change"))
+                     if token in kind), "Passive evidence")
+
+    kinds = {kind_label(str(reason.get("kind") or "")) for reason in probe.get("passive_reasons") or []}
+    return "Mixed passive alert" if len(kinds) > 1 else f"{next(iter(kinds))} alert" if kinds else "Passive change alert"
+
+
+def has_passive_alert(probe: dict[str, Any]) -> bool:
+    return bool(probe.get("verdict_basis") == "passive" or probe.get("passive_reasons") or probe.get("verdict") == "DOWNGRADED!")
+
+
+def probe_presentation(probe: dict[str, Any], declared_model: str = "") -> str:
+    """A presentation-only summary; raw reports and historical evidence remain intact below it."""
+    if not probe:
+        return ""
+    verdict = fingerprint_verdict(probe)
+    overlap = probe.get("fingerprint_resolution") == "overlap" or verdict == "AMBIGUOUS"
+    lines = [f"Declared model: {probe.get('expected') or declared_model or '?'}"]
+    if probe.get("stale_account"):
+        lines.append("Fingerprint: UNVERIFIED (result belongs to another or unknown account)")
+    elif overlap:
+        lines.extend(("Fingerprint: Astra / Sol 6.1 · not distinguishable",
+                      "The bank cannot reliably distinguish these models. A raw Astra candidate does not confirm model identity."))
+    elif verdict == "UNLISTED" or probe.get("fingerprint_resolution") == "unlisted":
+        lines.append("Fingerprint: UNLISTED · attribution unavailable; the declared model is absent from the bank.")
+    elif verdict == "DOWNGRADED!":
+        lines.append("Fingerprint: not independently recorded in this older result")
+    else:
+        lines.append(f"Fingerprint: {verdict or 'unavailable'}" + (f" · {probe['prediction']}" if probe.get("prediction") else ""))
+    if probe.get("finished") or probe.get("finished_ago"):
+        lines.append(f"Probe time: {probe.get('finished') or probe.get('finished_ago')}")
+    if probe.get("results"):
+        lines.append("Raw candidates · closed-set similarity scores (not identity confidence): " + " · ".join(
+            f"{result.get('model')} {float(result.get('probability') or 0):.0%}" for result in probe["results"]))
+    if has_passive_alert(probe):
+        lines.extend(("", "Passive events: " + passive_alert_label(probe)))
+        reasons = probe.get("passive_reasons") or []
+        for reason in reasons:
+            lines.append(f"  {reason.get('kind') or 'recorded evidence'}: {reason.get('detail') or '?'}" +
+                         (f" · {reason['ts']}" if reason.get("ts") else ""))
+        if not reasons:
+            lines.append("  The older record did not save separate reasons; see the recorded evidence and report below.")
+    if probe.get("recorded_verdict"):
+        lines.append(f"Recorded verdict: {probe['recorded_verdict']} (display uses current attribution rules)")
+    return "\n".join(lines)
+
+
 def tray_notifications(snapshot: dict[str, Any], previous_signature: tuple | None,
                       previous_verdict_id: str | None) -> tuple[list[tuple[str, str]], tuple, str | None]:
     """Select only configured, actionable tray notices and advance their comparison keys."""
@@ -44,13 +99,14 @@ def tray_notifications(snapshot: dict[str, Any], previous_signature: tuple | Non
         new_verdict = bool(verdict_id and verdict_id != previous_verdict_id)
         if previous_signature is not None:
             if state in ("alert", "warn") and signature != previous_signature:
-                title = "Model downgrade detected" if state == "alert" else "Suspicious probe result"
+                title = (passive_alert_label(verdict) if has_passive_alert(verdict) else "Model downgrade detected") if state == "alert" else "Suspicious probe result"
                 notices.append((title, message))
             elif new_verdict and verdict.get("is_downgrade"):
-                notices.append(("Model downgrade detected", message))
+                notices.append((passive_alert_label(verdict) if has_passive_alert(verdict) else "Model downgrade detected", message))
             elif new_verdict and verdict.get("is_suspicious"):
                 notices.append(("Suspicious probe result", message))
-            elif (config.get("notify_on_ok") and new_verdict and verdict.get("verdict") == "MATCH"):
+            elif (config.get("notify_on_ok") and new_verdict and fingerprint_verdict(verdict) == "MATCH"
+                  and verdict.get("fingerprint_resolution") != "overlap"):
                 notices.append(("Probe matched", message))
     return notices, signature, verdict_id
 
@@ -493,6 +549,10 @@ class PanelApp:
                           f"Model: {row.get('model') or '?'}", f"Reasoning effort: {row.get('effort') or '?'}",
                           f"Last activity: {row.get('updated_ago') or '?'}"]
                 body = "\n".join(status) + "\n\n" + body
+        if row:
+            presentation = probe_presentation(row.get("last_probe") or {}, str(row.get("model") or ""))
+            if presentation:
+                body = presentation + "\n\nRecorded report and evidence\n----------------------------\n" + body
         if self._last_operation:
             body = "Latest panel action\n-------------------\n" + self._last_operation.strip() + "\n\n" + body
         self._write_report(body)
@@ -568,6 +628,10 @@ class PanelApp:
         if row.get("probe_running"):
             return "PROBING"
         if row.get("alert"):
+            if has_passive_alert(probe):
+                return passive_alert_label(probe).upper()
+            if row.get("hard_evidence"):
+                return "PASSIVE ALERT"
             return "DOWNGRADE"
         if row.get("suspicious"):
             return "SUSPICIOUS"
@@ -583,7 +647,9 @@ class PanelApp:
             return "UPGRADED"
         if probe.get("status") == "failed" or probe.get("verdict") in ("INVALID", "FAILED"):
             return "FAILED"
-        return str(probe.get("verdict") or ("ACTIVE" if row.get("active") else "QUIET"))
+        if probe.get("fingerprint_resolution") == "overlap" or fingerprint_verdict(probe) == "AMBIGUOUS":
+            return "AMBIGUOUS"
+        return str(fingerprint_verdict(probe) or ("ACTIVE" if row.get("active") else "QUIET"))
 
     def _apply_snapshot(self, snapshot: dict[str, Any]) -> None:
         self.snapshot = snapshot

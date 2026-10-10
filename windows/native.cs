@@ -285,31 +285,64 @@ namespace Nerfed {
             if (value == "just now") return "刚刚";
             return value.Replace("s ago", " 秒前").Replace("m ago", " 分钟前").Replace("h ago", " 小时前").Replace("d ago", " 天前");
         }
-        static string Verdict(object probe) {
+        static bool PassiveAlert(object probe) {
+            return Json.S(probe, "verdict_basis") == "passive" || Json.Items(Json.Get(probe, "passive_reasons")).Any() || Json.S(probe, "verdict") == "DOWNGRADED!";
+        }
+        static string PassiveKind(string kind) {
+            if (kind.Contains("effort")) return "推理强度变化";
+            if (kind.Contains("model")) return "模型标识变化";
+            if (kind.Contains("context")) return "上下文变化";
+            if (kind.Contains("tier")) return "服务等级变化";
+            return "被动证据";
+        }
+        static string PassiveLabel(object probe) {
+            var kinds = Json.Items(Json.Get(probe, "passive_reasons")).Select(e => PassiveKind(Json.S(e, "kind"))).Distinct().ToList();
+            return kinds.Count > 1 ? "混合被动告警" : kinds.Count == 1 ? kinds[0] + "告警" : "被动变化告警";
+        }
+        static string FingerprintCode(object probe) {
+            string value = Json.S(probe, "fingerprint_verdict"); return value.Length > 0 ? value : Json.S(probe, "verdict");
+        }
+        static bool FingerprintOverlap(object probe) { return Json.S(probe, "fingerprint_resolution") == "overlap" || FingerprintCode(probe) == "AMBIGUOUS"; }
+        static string FingerprintVerdict(object probe) {
             if (probe == null || Json.Map(probe).Count == 0) return "尚未检测";
             if (Json.B(probe, "stale_account")) return "未验证";
-            string verdict = Json.S(probe, "verdict");
-            if (Json.B(probe, "is_downgrade") || verdict == "DOWNGRADED!") return "降配";
-            if (Json.B(probe, "is_upgrade")) return "升配";
-            switch (verdict) { case "MATCH": return "匹配"; case "MISMATCH": return "模型改道"; case "SUSPICIOUS": return "可疑"; case "INVALID": return "样本无效"; case "UNLISTED": return "未收录"; default: return Json.S(probe, "status") == "failed" ? "检测失败" : "等待结果"; }
+            string verdict = FingerprintCode(probe);
+            if (FingerprintOverlap(probe)) return "无法区分";
+            if (verdict == "MISMATCH" && !PassiveAlert(probe) && Json.B(probe, "is_upgrade")) return "升配";
+            if (verdict == "MISMATCH" && !PassiveAlert(probe) && Json.B(probe, "is_downgrade")) return "降配";
+            switch (verdict) { case "MATCH": return "匹配"; case "MISMATCH": return "模型改道"; case "SUSPICIOUS": return "可疑"; case "INVALID": return "样本无效"; case "UNLISTED": return "未收录 · 不可归因"; case "DOWNGRADED!": return "未独立记录"; default: return Json.S(probe, "status") == "failed" ? "检测失败" : "等待结果"; }
         }
-        static Brush VerdictColor(object probe) {
+        static string Verdict(object probe) { return PassiveAlert(probe) && !Json.B(probe, "stale_account") ? PassiveLabel(probe) : FingerprintVerdict(probe); }
+        static Brush FingerprintColor(object probe) {
             if (probe == null || Json.B(probe, "stale_account")) return Muted;
-            if (Json.B(probe, "is_downgrade") || Json.S(probe, "verdict") == "DOWNGRADED!") return Red;
-            if (Json.S(probe, "verdict") == "MATCH" || Json.B(probe, "is_upgrade")) return Green;
-            if (Json.S(probe, "verdict") == "MISMATCH" || Json.S(probe, "verdict") == "SUSPICIOUS") return Orange;
+            if (FingerprintOverlap(probe)) return Muted;
+            string verdict = FingerprintCode(probe);
+            if (verdict == "MISMATCH" && !PassiveAlert(probe) && Json.B(probe, "is_downgrade")) return Red;
+            if (verdict == "MATCH" || (verdict == "MISMATCH" && !PassiveAlert(probe) && Json.B(probe, "is_upgrade"))) return Green;
+            if (verdict == "MISMATCH" || verdict == "SUSPICIOUS") return Orange;
             return Muted;
         }
+        static Brush VerdictColor(object probe) { return PassiveAlert(probe) && !Json.B(probe, "stale_account") ? Red : FingerprintColor(probe); }
         static string Percent(object value) { try { return Math.Round(Convert.ToDouble(value, CultureInfo.InvariantCulture) * 100).ToString("0", CultureInfo.InvariantCulture) + "%"; } catch { return ""; } }
         static string ProbeDetail(object probe) {
             if (probe == null) return "";
-            string detail = Json.S(probe, "prediction");
+            string detail = FingerprintOverlap(probe) ? "Astra / Sol 6.1 · 无法区分" : Json.S(probe, "prediction");
             if (Json.B(probe, "stale_account")) return "此前结果来自其他或未知账号 · " + Ago(Json.S(probe, "finished_ago"));
-            if (Json.Get(probe, "probability") != null) detail += " " + Percent(Json.Get(probe, "probability"));
-            if (Json.S(probe, "expected") != Json.S(probe, "prediction") && Json.Get(probe, "p_expected") != null) detail += "，所选模型 " + Percent(Json.Get(probe, "p_expected"));
+            if (!FingerprintOverlap(probe) && Json.S(probe, "fingerprint_resolution") != "unlisted" && FingerprintCode(probe) != "UNLISTED") {
+                if (Json.Get(probe, "probability") != null) detail += " " + Percent(Json.Get(probe, "probability"));
+                if (Json.S(probe, "expected") != Json.S(probe, "prediction") && Json.Get(probe, "p_expected") != null) detail += "，声明模型相似分 " + Percent(Json.Get(probe, "p_expected"));
+            } else if (!FingerprintOverlap(probe)) detail = "";
             if (Json.N(probe, "used_outputs") < Json.N(probe, "queries")) detail += " · " + Json.N(probe, "used_outputs") + "/" + Json.N(probe, "queries") + " 份回答";
             if (Json.N(probe, "rounds") > 1) detail += " · " + Json.N(probe, "rounds") + " 轮检测";
             string ago = Ago(Json.S(probe, "finished_ago")); return detail + (ago.Length == 0 ? "" : " · " + ago);
+        }
+        static string FingerprintLine(object probe) {
+            string detail = ProbeDetail(probe);
+            return "指纹 · " + (FingerprintOverlap(probe) && !Json.B(probe, "stale_account") ? detail : FingerprintVerdict(probe) + (detail.Length > 0 ? " · " + detail : ""));
+        }
+        static string PassiveLine(object probe) {
+            string time = Json.Items(Json.Get(probe, "passive_reasons")).Select(e => Json.S(e, "ts")).FirstOrDefault(t => t.Length > 0) ?? "";
+            return "被动 · " + PassiveLabel(probe) + (time.Length > 0 ? " · " + time : "");
         }
         string HookLine(out bool attention) {
             attention = false; object hooks = Json.Get(snapshot, "hooks"), install = Json.Get(snapshot, "install");
@@ -330,7 +363,7 @@ namespace Nerfed {
             var image = new Image { Width = 62, Height = 62, Margin = new Thickness(0, 1, 0, 7), HorizontalAlignment = HorizontalAlignment.Center };
             try { image.Source = FaceImage(state == "alert" ? "alert" : state == "warn" ? "warn" : "ok"); header.Children.Add(image); } catch { header.Children.Add(Text("(•ᴗ•)", 28, Ink, true)); }
             int downgrade = Json.N(overall, "downgraded"), suspicious = Json.N(overall, "suspicious");
-            string headline = snapshot == null ? "正在连接检测后端" : downgrade > 0 ? downgrade + " 个会话降配" : suspicious > 0 ? suspicious + " 个会话可疑" : Json.N(overall, "unverified") > 0 ? "有会话等待验证" : Json.N(overall, "running") > 0 ? "正在检测模型" : "未发现模型降配";
+            string headline = snapshot == null ? "正在连接检测后端" : downgrade > 0 ? downgrade + " 个会话告警" : suspicious > 0 ? suspicious + " 个会话可疑" : Json.N(overall, "unverified") > 0 ? "有会话等待验证" : Json.N(overall, "running") > 0 ? "正在检测模型" : "未发现模型或设置异常";
             var title = Text(headline, 20, downgrade > 0 ? Red : suspicious > 0 ? Orange : Ink, true); title.TextAlignment = TextAlignment.Center; header.Children.Add(title);
             var counts = new List<string>();
             if (downgrade > 0 && suspicious > 0) counts.Add(suspicious + " 个可疑");
@@ -384,14 +417,13 @@ namespace Nerfed {
             titleButton.HorizontalContentAlignment = HorizontalAlignment.Left; titleButton.HorizontalAlignment = HorizontalAlignment.Stretch;
             titleButton.Content = Text(SessionTitle(row, index), 14, Ink, true); titleButton.ToolTip = "展开或收起模型归因、检测历史与被动证据";
             text.Children.Add(titleButton);
-            text.Children.Add(Text(Json.S(row, "model") + (Json.S(row, "effort").Length > 0 ? " @ " + Json.S(row, "effort") : "") + " · " + Json.N(row, "turns") + " 轮 · " + Ago(Json.S(row, "updated_ago")), 11, Muted, false));
-            string verdict = Verdict(probe); string detail = ProbeDetail(probe);
-            if (probe == null && Json.B(row, "due")) detail = "已到检测时间";
-            var verdictText = Text(verdict + (detail.Length > 0 ? " · " + detail : ""), 11, VerdictColor(probe), false); text.Children.Add(verdictText);
+            text.Children.Add(Text("声明模型：" + Json.S(row, "model") + (Json.S(row, "effort").Length > 0 ? " @ " + Json.S(row, "effort") : "") + " · " + Json.N(row, "turns") + " 轮 · " + Ago(Json.S(row, "updated_ago")), 11, Muted, false));
+            text.Children.Add(Text(FingerprintLine(probe) + (probe == null && Json.B(row, "due") ? " · 已到检测时间" : ""), 11, FingerprintColor(probe), false));
+            if (PassiveAlert(probe)) text.Children.Add(Text(PassiveLine(probe), 11, Json.B(probe, "stale_account") ? Muted : Red, false));
             string error; if (commandFailures.TryGetValue(id, out error)) text.Children.Add(Text("最近尝试失败 · " + error, 11, Orange, false));
             else if (failure != null) text.Children.Add(Text("最近尝试失败 · " + Ago(Json.S(failure, "finished_ago")) + " · 有效裁决仍保留", 11, Orange, false));
             string evidence = TranslateEvidence(Json.S(row, "last_evidence"));
-            if (evidence.Length > 0) text.Children.Add(Text(evidence, 11, Json.N(row, "hard_evidence") > 0 ? Red : Json.N(row, "good_evidence") > 0 ? Green : Orange, false));
+            if (evidence.Length > 0) text.Children.Add(Text("被动记录 · " + evidence + (Json.S(row, "last_evidence_ago").Length > 0 ? " · " + Ago(Json.S(row, "last_evidence_ago")) : ""), 11, Json.N(row, "hard_evidence") > 0 ? Red : Json.N(row, "good_evidence") > 0 ? Green : Orange, false));
             if (Json.B(row, "halted")) text.Children.Add(Text("工作工具已暂停 · 恢复命令：bin\\nerfed.cmd resume --thread " + id, 11, Orange, false));
             bool running = inferenceTarget == id || Json.B(row, "probe_running");
             bool retry = failure != null || commandFailures.ContainsKey(id);
@@ -403,23 +435,33 @@ namespace Nerfed {
             body.Children.Add(Card(content));
         }
         static string TranslateEvidence(string text) {
-            return (text ?? "").Replace("Silent model change:", "模型已悄悄切换：").Replace("Settings: effort", "推理级别设置：").Replace("was that you?", "是你改的吗？").Replace("Upgraded:", "已升配：");
+            return (text ?? "").Replace("Silent model change:", "模型标识变化：").Replace("Silent effort change:", "推理强度变化：").Replace("Settings: model", "模型标识设置：").Replace("Settings: effort", "推理强度设置：").Replace("Hidden model ran:", "记录到隐藏模型：").Replace("Context window", "上下文变化：").Replace("was that you?", "是你改的吗？").Replace("Upgraded:", "已升配：");
         }
         void AddDetails(StackPanel target, object row, bool fresh) {
             target.Children.Add(new Border { Height = 1, Background = Color("#DDE0E3"), Margin = new Thickness(15, 9, 0, 7) });
             var detail = new StackPanel { Margin = new Thickness(15, 0, 0, 0) };
             object probe = Json.Get(row, fresh ? "global_probe" : "last_probe");
             detail.Children.Add(Text("模型指纹归因", 11, Muted, true));
+            detail.Children.Add(Text("声明模型：" + (Json.S(probe, "expected").Length > 0 ? Json.S(probe, "expected") : Json.S(row, fresh ? "default_model" : "model")), 11, Muted, false));
+            detail.Children.Add(Text(FingerprintLine(probe), 11, FingerprintColor(probe), false));
+            if (FingerprintOverlap(probe)) detail.Children.Add(Text("现有指纹库无法稳定区分 Astra 与 Sol 6.1；原始候选不代表已确认的模型身份。", 10, Faint, false));
+            else if (FingerprintCode(probe) == "UNLISTED") detail.Children.Add(Text("声明模型未被指纹库收录，原始候选只能作为相似线索，无法归因。", 10, Faint, false));
             var results = Json.Items(Json.Get(probe, "results")).ToList();
             if (results.Count == 0) detail.Children.Add(Text("尚无可用的模型归因。", 11, Faint, false));
+            else detail.Children.Add(Text("原始候选 · 闭集相似分（非模型身份确认概率）", 10, Faint, false));
             foreach (object result in results.Take(6)) {
                 var line = Split(Text(Json.S(result, "model"), 11, Muted, false), Text(Percent(Json.Get(result, "probability")), 11, Ink, true)); detail.Children.Add(line);
-                detail.Children.Add(new Border { Height = 3, Background = Color("#E0E3E6"), Margin = new Thickness(0, 1, 0, 4), Child = new Border { HorizontalAlignment = HorizontalAlignment.Left, Width = Math.Max(0, Math.Min(1, Json.P(result, "probability"))) * 220, Background = VerdictColor(probe), CornerRadius = new CornerRadius(2) } });
+                detail.Children.Add(new Border { Height = 3, Background = Color("#E0E3E6"), Margin = new Thickness(0, 1, 0, 4), Child = new Border { HorizontalAlignment = HorizontalAlignment.Left, Width = Math.Max(0, Math.Min(1, Json.P(result, "probability"))) * 220, Background = FingerprintColor(probe), CornerRadius = new CornerRadius(2) } });
             }
+            AddPassiveReasons(detail, probe);
             detail.Children.Add(Text("检测历史", 11, Muted, true));
             var history = Json.Items(Json.Get(row, fresh ? "global_probes" : "probes")).ToList();
             if (history.Count == 0) detail.Children.Add(Text("还没有检测记录。", 11, Faint, false));
-            foreach (object item in history.Take(8)) detail.Children.Add(Text(Verdict(item) + " · " + ProbeDetail(item), 11, VerdictColor(item), false));
+            foreach (object item in history.Take(8)) {
+                detail.Children.Add(Text(FingerprintLine(item), 11, FingerprintColor(item), false));
+                if (Json.S(item, "recorded_verdict").Length > 0) detail.Children.Add(Text("原记录裁决：" + Json.S(item, "recorded_verdict") + " · 按当前归因规则展示", 10, Faint, false));
+                AddPassiveReasons(detail, item);
+            }
             object failure = Json.Get(row, fresh ? "global_failure" : "last_failure");
             if (failure != null) detail.Children.Add(Text("最近失败：" + String.Join("；", Json.Items(Json.Get(failure, "errors")).Select(Convert.ToString)), 11, Orange, false));
             if (!fresh) {
@@ -428,18 +470,27 @@ namespace Nerfed {
                 if (evidence.Count == 0) detail.Children.Add(Text("没有记录到模型或设置变化。", 11, Faint, false));
                 foreach (object item in evidence.Take(8)) {
                     bool active = Json.B(item, "active"); string severity = Json.S(item, "severity");
-                    detail.Children.Add(Text(TranslateEvidence(Json.S(item, "text")) + " · " + Ago(Json.S(item, "ago")) + (active ? "" : " · 已还原"), 11, !active ? Muted : severity == "hard" ? Red : severity == "good" ? Green : Orange, false));
+                    detail.Children.Add(Text(TranslateEvidence(Json.S(item, "text")) + " · " + Ago(Json.S(item, "ago")) + (Json.S(item, "ts").Length > 0 ? " · " + Json.S(item, "ts") : "") + (active ? "" : " · 已还原"), 11, !active ? Muted : severity == "hard" ? Red : severity == "good" ? Green : Orange, false));
                 }
             }
-            detail.Children.Add(Text("指纹概率是归因线索；被动记录显示实际模型或设置变化。", 10, Faint, false));
+            detail.Children.Add(Text("指纹相似分是归因线索；被动记录显示模型标识或设置变化。", 10, Faint, false));
             var copy = Button("复制报告", delegate { CopyReport(row, fresh); }); copy.Margin = new Thickness(0, 6, 0, 2); detail.Children.Add(copy);
             target.Children.Add(detail);
+        }
+        static void AddPassiveReasons(StackPanel target, object probe) {
+            if (!PassiveAlert(probe)) return;
+            Brush color = Json.B(probe, "stale_account") ? Muted : Red;
+            target.Children.Add(Text(PassiveLine(probe), 11, color, true));
+            var reasons = Json.Items(Json.Get(probe, "passive_reasons")).ToList();
+            foreach (object reason in reasons) target.Children.Add(Text(PassiveKind(Json.S(reason, "kind")) + "：" + Json.S(reason, "detail") + (Json.S(reason, "ts").Length > 0 ? " · " + Json.S(reason, "ts") : ""), 11, color, false));
+            if (reasons.Count == 0) target.Children.Add(Text("原记录保留了被动告警，但未单独保存原因；请查看下方被动证据或完整报告。", 10, Faint, false));
         }
         void AddFresh() {
             Section("新会话", Json.S(snapshot, "default_model") + (Json.S(snapshot, "default_effort").Length > 0 ? " @ " + Json.S(snapshot, "default_effort") : ""));
             var content = new StackPanel(); object probe = Json.Get(snapshot, "global_probe"), failure = Json.Get(snapshot, "global_failure");
             bool running = inferenceTarget == "fresh" || Json.B(snapshot, "global_running");
-            var summary = new StackPanel(); summary.Children.Add(Text(Verdict(probe) + " · " + ProbeDetail(probe), 11, VerdictColor(probe), false));
+            var summary = new StackPanel(); summary.Children.Add(Text(FingerprintLine(probe), 11, FingerprintColor(probe), false));
+            if (PassiveAlert(probe)) summary.Children.Add(Text(PassiveLine(probe), 11, Json.B(probe, "stale_account") ? Muted : Red, false));
             if (failure != null || commandFailures.ContainsKey("fresh")) summary.Children.Add(Text("最近尝试失败 · 可重试，有效裁决仍保留", 11, Orange, false));
             var action = Button(running ? "检测中…" : failure != null || commandFailures.ContainsKey("fresh") ? "重试" : "检测", StartFresh);
             action.IsEnabled = !running && !demo; action.ToolTip = demo ? "示例数据不调用推理" : "使用独立新会话检测，会使用推理额度"; probeButtons["fresh"] = action;
@@ -463,7 +514,7 @@ namespace Nerfed {
         }
         void CopyReport(object row, bool fresh) {
             string report = Json.S(row, fresh ? "global_report_text" : "report_text");
-            if (String.IsNullOrEmpty(report)) report = Verdict(Json.Get(row, fresh ? "global_probe" : "last_probe")) + "\n" + ProbeDetail(Json.Get(row, fresh ? "global_probe" : "last_probe"));
+            if (String.IsNullOrEmpty(report)) { object probe = Json.Get(row, fresh ? "global_probe" : "last_probe"); report = "声明模型：" + Json.S(probe, "expected") + "\n" + FingerprintLine(probe) + (PassiveAlert(probe) ? "\n" + PassiveLine(probe) : ""); }
             try { Clipboard.SetText(report); operation = "报告已复制"; } catch (Exception error) { operation = "无法访问剪贴板：" + error.Message; }
             UpdateActivity();
         }
@@ -671,8 +722,8 @@ namespace Nerfed {
             bool changed = previousSignature != null && signature != previousSignature, newVerdict = previousSignature != null && id.Length > 0 && id != previousVerdict;
             if (tray != null && Json.B(config, "notify")) {
                 bool alert = Json.S(overall, "status") == "alert" || Json.B(verdict, "is_downgrade"), warn = Json.S(overall, "status") == "warn" || Json.B(verdict, "is_suspicious");
-                if ((changed && (alert || warn)) || (newVerdict && (alert || warn || (Json.B(config, "notify_on_ok") && Json.S(verdict, "verdict") == "MATCH")))) {
-                    tray.ShowBalloonTip(6000, alert ? "检测到模型降配" : warn ? "检测结果可疑" : "检测结果匹配", Json.N(overall, "downgraded") + " 个降配 · " + Json.N(overall, "suspicious") + " 个可疑", alert ? Forms.ToolTipIcon.Error : warn ? Forms.ToolTipIcon.Warning : Forms.ToolTipIcon.Info);
+                if ((changed && (alert || warn)) || (newVerdict && (alert || warn || (Json.B(config, "notify_on_ok") && FingerprintCode(verdict) == "MATCH" && !FingerprintOverlap(verdict))))) {
+                    tray.ShowBalloonTip(6000, alert ? (PassiveAlert(verdict) ? PassiveLabel(verdict) : "检测到模型变化告警") : warn ? "检测结果可疑" : "检测结果匹配", Json.N(overall, "downgraded") + " 个告警 · " + Json.N(overall, "suspicious") + " 个可疑", alert ? Forms.ToolTipIcon.Error : warn ? Forms.ToolTipIcon.Warning : Forms.ToolTipIcon.Info);
                     // Sound is emitted once by the shared backend, independently of notifications.
                 }
             }
@@ -703,6 +754,16 @@ namespace Nerfed {
             try {
                 string initial = Json.Encode(snapshot); transport.Dispose(); var fake = new FakeTransport(initial); transport = fake; fakeInference = true;
                 Assert(demo && !String.IsNullOrEmpty(Environment.GetEnvironmentVariable("CODEX_HOME")) && Environment.GetEnvironmentVariable("CODEX_HOME").Contains("nerfed-native-"), "temporary homes");
+                var overlap = Json.Parse(@"{""expected"":""gpt-6.1-sol"",""prediction"":""gpt-6-astra"",""probability"":1.0,""verdict"":""AMBIGUOUS"",""fingerprint_verdict"":""AMBIGUOUS"",""fingerprint_resolution"":""overlap"",""results"":[{""model"":""gpt-6-astra"",""probability"":1.0}]}");
+                Assert(FingerprintLine(overlap).Contains("Astra / Sol 6.1 · 无法区分") && !FingerprintLine(overlap).Contains("100%") && FingerprintColor(overlap) == Muted && !PassiveAlert(overlap), "ambiguous fingerprint is neutral and does not confirm raw candidate");
+                var passive = Json.Parse(Json.Encode(overlap)); passive["verdict"] = "DOWNGRADED!"; passive["verdict_basis"] = "passive"; passive["is_downgrade"] = true;
+                passive["passive_reasons"] = new[] { Json.Parse(@"{""kind"":""silent_effort_change"",""detail"":""high → low"",""ts"":""2026-10-10T10:00:00Z""}") };
+                Assert(Verdict(passive) == "推理强度变化告警" && VerdictColor(passive) == Red && FingerprintColor(passive) == Muted, "passive alert does not change independent fingerprint color");
+                var syntheticDetails = new StackPanel(); AddDetails(syntheticDetails, new Dictionary<string, object> { { "last_probe", passive } }, false);
+                string presented = String.Join("\n", syntheticDetails.Children.OfType<StackPanel>().First().Children.OfType<TextBlock>().Select(t => t.Text));
+                Assert(presented.Contains("声明模型：gpt-6.1-sol") && presented.Contains("闭集相似分") && presented.Contains("high → low") && presented.Contains("2026-10-10T10:00:00Z"), "rendered details distinguish declaration, raw scores and timed passive evidence");
+                var unlisted = Json.Parse(@"{""expected"":""future-model"",""prediction"":""gpt-6-astra"",""probability"":1.0,""verdict"":""UNLISTED""}");
+                Assert(FingerprintLine(unlisted).Contains("未收录 · 不可归因") && !FingerprintLine(unlisted).Contains("100%") && FingerprintColor(unlisted) == Muted, "unlisted model remains unattributable with older fields");
                 // The real row click path, not an alternate inference implementation.
                 fake.HoldInference = true; UpdateControls(); probeButtons["payments"].RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
                 Assert(fake.Calls.Last()[0] == "worker" && fake.Calls.Last()[2] == "payments", "selected session arguments");
@@ -745,7 +806,7 @@ namespace Nerfed {
                 fake.Release(true); Assert(fake.Calls.Count == count, "late callback cannot refresh after shutdown");
                 using (var backend = new BackendTransport(python, root, true)) { backend.Dispose(); Assert(!backend.Submit(new Request { Action = "snapshot" }, delegate { }), "real transport closed gate"); }
                 Console.WriteLine("Native isolated state: " + System.IO.Path.GetDirectoryName(Environment.GetEnvironmentVariable("CODEX_HOME")));
-                Console.WriteLine("Native self-test passed: session/retry/fresh/settings, long-probe refresh and diagnostics, draft/focus preservation, minimum-size Save reachability, scheduler isolation/throttle, NotifyIcon lifecycle, shutdown gate.");
+                Console.WriteLine("Native self-test passed: conservative attribution and timed passive evidence, session/retry/fresh/settings, long-probe refresh and diagnostics, draft/focus preservation, minimum-size Save reachability, scheduler isolation/throttle, NotifyIcon lifecycle, shutdown gate.");
             } catch (Exception error) { exitCode = 1; Console.Error.WriteLine(error.ToString()); Shutdown(); }
         }
     }

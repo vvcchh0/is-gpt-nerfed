@@ -7,7 +7,8 @@
 > [会话过滤规则](docs/SESSION_FILTERING.zh-CN.md)、[性能分析](docs/PERFORMANCE.zh-CN.md)、
 > [验收证据](docs/VALIDATION.md)。原作者为
 > [kiyoakii/is-gpt-nerfed](https://github.com/kiyoakii/is-gpt-nerfed)，MIT；归属见 [NOTICE.md](NOTICE.md)。
-> [Windows 下载页](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.4)提供便携包、源码 ZIP 与 SHA-256 校验文件。
+> [Windows 下载页](https://github.com/vvcchh0/is-gpt-nerfed/releases/tag/windows-v0.5.3-port.5)提供便携包、源码 ZIP 与 SHA-256 校验文件。
+> Astra 与 GPT-6.1 Sol 的数字指纹存在重叠。Windows 版会显示“无法区分”，并单独列出被动设置变化，不把相似候选当成精确身份确认。详见[可靠性分析](docs/FINGERPRINT_RELIABILITY.zh-CN.md)。
 > 下方保留原 macOS 文档。数字指纹是库内统计归因信号，主动探测使用联网 Codex 推理，
 > 具体检测边界见 Windows 使用说明。
 

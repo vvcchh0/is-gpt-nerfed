@@ -7,6 +7,10 @@ Windows 版本保留原作者、MIT 许可证与上游提交历史，具体来�
 
 ## 结论与检测边界
 
+Windows port.5 对 GPT-6 Astra / GPT-6.1 Sol 的已知重叠采用 `AMBIGUOUS`，
+将指纹判定与被动事件分开显示；实现理由、官方与社区证据、公开实验复现和本机实测见
+[指纹可靠性分析](FINGERPRINT_RELIABILITY.zh-CN.md) 与 [ADR 0004](adr/0004-conservative-fingerprint-resolution.md)。
+
 这是一个 Codex 会话完整性监测器。它比较“客户端请求了什么”与“日志变化／模型输出指纹”。
 它没有访问服务端权重，也没有测量通用能力、价格或实际计费。因此能报告可疑路由和请求参数变化，
 不能仅凭一张指纹卡证明服务端换了权重、能力下降或存在商业欺诈。

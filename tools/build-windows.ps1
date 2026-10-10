@@ -4,7 +4,7 @@ $stage = $null
 $stageCreated = $false
 try {
     $root = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
-    $version = '0.5.3-port.4'
+    $version = '0.5.3-port.5'
     $pythonVersion = '3.13.16'
     $pythonUrl = 'https://www.python.org/ftp/python/3.13.16/python-3.13.16-embed-amd64.zip'
     $pythonHash = '97dae5274cc54867065e8d5a3226e48c35017ed332a0fdb0e27d5b5821961297'

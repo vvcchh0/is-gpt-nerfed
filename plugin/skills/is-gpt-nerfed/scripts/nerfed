@@ -1093,7 +1093,7 @@ LINES = {
     ],
 }
 
-FACES = {"MATCH": "•ᴗ•", "OK": "•ᴗ•", "MISMATCH": "ಠ_ಠ", "DOWNGRADED": "ಠ_ಠ", "SUSPICIOUS": "•_•", "UNLISTED": "•_•", "INVALID": "¬_¬", "NUDGE": "•o•"}
+FACES = {"MATCH": "•ᴗ•", "OK": "•ᴗ•", "MISMATCH": "ಠ_ಠ", "DOWNGRADED": "ಠ_ಠ", "SUSPICIOUS": "•_•", "UNLISTED": "•_•", "AMBIGUOUS": "•_•", "INVALID": "¬_¬", "NUDGE": "•o•"}
 
 
 def pet_line(kind: str, seed: str = "", **fmt) -> str:
@@ -1173,9 +1173,14 @@ def probe_path(pid: str) -> str:
 
 
 MARGIN_SIGMA = 0.5
+FINGERPRINT_OVERLAP = ("gpt-6-astra", "gpt-6.1-sol")
+FINGERPRINT_OVERLAP_NOTE = (
+    "The current fingerprint cannot reliably distinguish gpt-6-astra from gpt-6.1-sol. "
+    "The raw bank candidate is gpt-6-astra; its percentage is a closed-set similarity, not a model identity verdict."
+)
 
 
-def assess(expected: str | None, analysis: dict | None, hard_evidence: list[dict], cfg: dict | None = None) -> dict:
+def assess_fingerprint(expected: str | None, analysis: dict | None, cfg: dict | None = None) -> dict:
     """Turn attribution probabilities into a verdict.
 
     Probabilities come from ModelTrace's calibrated softmax, which (as its author notes) amplifies small score
@@ -1185,9 +1190,6 @@ def assess(expected: str | None, analysis: dict | None, hard_evidence: list[dict
     a downgrade on."""
     conf = float((cfg or {}).get("mismatch_confidence") or DEFAULT_CONFIG["mismatch_confidence"])
     out = {"verdict": None, "direction": None, "p_top": None, "p_expected": None, "margin": None, "confidence": None, "top": None}
-    if hard_evidence:
-        out.update(verdict="DOWNGRADED!", direction="hard")
-        return out
     if not analysis:
         out["verdict"] = "INVALID"
         return out
@@ -1200,6 +1202,9 @@ def assess(expected: str | None, analysis: dict | None, hard_evidence: list[dict
     exp = normalize_model(expected)
     if not exp:
         out["verdict"] = "UNKNOWN"
+        return out
+    if exp in FINGERPRINT_OVERLAP and top["model"] == FINGERPRINT_OVERLAP[0]:
+        out["verdict"] = "AMBIGUOUS"
         return out
     exp_row = next((r for r in results if r["model"] == exp), None)
     if exp_row is None:
@@ -1217,6 +1222,52 @@ def assess(expected: str | None, analysis: dict | None, hard_evidence: list[dict
         confident = False
     out.update(verdict="MISMATCH" if confident else "SUSPICIOUS", direction=classify_change(exp, top["model"]),
                confidence="high" if confident else "low")
+    return out
+
+
+def fingerprint_fields(expected, prediction, verdict) -> dict:
+    overlap = normalize_model(expected) in FINGERPRINT_OVERLAP and prediction == FINGERPRINT_OVERLAP[0]
+    resolution = "overlap" if overlap else ("unlisted" if verdict == "UNLISTED" else
+                                          ("unavailable" if not prediction or verdict in ("INVALID", "UNKNOWN", None) else "model"))
+    return {"fingerprint_verdict": "AMBIGUOUS" if overlap else verdict,
+            "fingerprint_resolution": resolution, "fingerprint_group": list(FINGERPRINT_OVERLAP) if overlap else [],
+            "fingerprint_note": FINGERPRINT_OVERLAP_NOTE if overlap else
+            ("The declared model is absent from the fingerprint bank; the candidate is only a look-alike." if resolution == "unlisted" else "")}
+
+
+def assess(expected: str | None, analysis: dict | None, hard_evidence: list[dict], cfg: dict | None = None) -> dict:
+    """Keep the fingerprint result separate from recorded passive setting changes."""
+    out = assess_fingerprint(expected, analysis, cfg)
+    out.update(fingerprint_fields(expected, out.get("top"), out["verdict"]))
+    out["passive_reasons"] = [{k: e.get(k) for k in ("kind", "detail", "ts")} for e in hard_evidence]
+    out["verdict_basis"] = "passive" if hard_evidence else "fingerprint"
+    if hard_evidence:
+        out.update(verdict="DOWNGRADED!", direction="hard")
+    return out
+
+
+def project_probe_record(record: dict) -> dict:
+    """Apply today's resolution to a display copy; never rewrite historical probe evidence."""
+    out = dict(record)
+    original = out.get("verdict")
+    hard = original == "DOWNGRADED!" or bool(out.get("hard_evidence")) or out.get("verdict_basis") == "passive"
+    fp_verdict = out.get("fingerprint_verdict") or original
+    if fp_verdict == "DOWNGRADED!":
+        expected, prediction = normalize_model(out.get("expected")), out.get("prediction")
+        # Older records did not save the independent fingerprint verdict. Do not invent confidence.
+        fp_verdict = ("INVALID" if not prediction else "UNKNOWN" if not expected else
+                      "UNLISTED" if expected not in core.bank_model_ids(load_bank()) else
+                      "MATCH" if expected == prediction else "UNKNOWN")
+    out.update(fingerprint_fields(out.get("expected"), out.get("prediction"), fp_verdict))
+    out["verdict_basis"] = "passive" if hard else "fingerprint"
+    out["passive_reasons"] = [{k: e.get(k) for k in ("kind", "detail", "ts")}
+                              for e in (out.get("passive_reasons") or out.get("hard_evidence") or [])]
+    if hard:
+        out.update(verdict="DOWNGRADED!", direction="hard")
+    elif out["fingerprint_verdict"] == "AMBIGUOUS":
+        out.update(verdict="AMBIGUOUS", direction=None, confidence=None, quote=out["fingerprint_note"])
+    if original != out.get("verdict"):
+        out["recorded_verdict"] = original
     return out
 
 
@@ -1283,17 +1334,22 @@ def finalize_probe(rec: dict, outputs: list[dict], expected: str | None, errors:
         quote = pet_line("MATCH", seed=rec["id"], **fmt)
     elif verdict == "UNLISTED":
         quote = pet_line("UNLISTED", seed=rec["id"], **fmt)
+    elif verdict == "AMBIGUOUS":
+        quote = a["fingerprint_note"]
     elif verdict == "UNKNOWN":
         quote = f"No expected model recorded for this session; the fingerprint says {top} ({p:.0%})."
     else:
         quote = pet_line("INVALID", seed=rec["id"], **fmt)
 
     rec.update({"status": "done" if analysis else "failed", "finished": iso(), "expected": expected, "prediction": top,
-                "probability": round(p, 4) if analysis else None, "p_expected": round(p_exp, 4) if analysis else None,
+                "probability": round(p, 4) if analysis else None,
+                "p_expected": round(a["p_expected"], 4) if a.get("p_expected") is not None else None,
                 "margin": round(a["margin"], 3) if a.get("margin") is not None else None, "confidence": a.get("confidence"),
                 "used_outputs": n, "verdict": verdict, "direction": direction, "rounds": int(rec.get("rounds") or 1),
                 "quote": quote, "errors": errors, "hard_evidence": hard[:5], "soft_evidence": soft[:5],
                 "elapsed_s": rec.get("elapsed_s") or round(now() - float(rec.get("ts_start") or now()), 1)})
+    rec.update({k: a[k] for k in ("fingerprint_verdict", "fingerprint_resolution", "fingerprint_group", "fingerprint_note",
+                                 "verdict_basis", "passive_reasons")})
     if analysis:
         rec["results"] = [{k: (round(v, 4) if isinstance(v, float) else v) for k, v in r.items()} for r in analysis["results"][:6]]
         rec["family_probabilities"] = [{**f, "probability": round(f["probability"], 4)} for f in analysis["family_probabilities"]]
@@ -1303,7 +1359,8 @@ def finalize_probe(rec: dict, outputs: list[dict], expected: str | None, errors:
     rec.setdefault("account", current_account())
     index_row = {k: rec.get(k) for k in ("id", "finished", "thread_id", "mode", "expected", "prediction", "probability", "p_expected",
                                          "margin", "confidence", "used_outputs", "queries", "rounds", "retries", "elapsed_s",
-                                         "verdict", "direction", "status")}
+                                          "verdict", "direction", "status", "fingerprint_verdict", "fingerprint_resolution",
+                                          "fingerprint_group", "fingerprint_note", "verdict_basis", "passive_reasons")}
     index_row["account_id"] = (rec.get("account") or {}).get("id")
     append_jsonl(PROBES_INDEX, index_row)
     log_event("probe_verdict", level="warn" if verdict in ("MISMATCH", "DOWNGRADED!", "SUSPICIOUS") else ("error" if verdict == "INVALID" else "info"),
@@ -1325,8 +1382,11 @@ def finalize_probe(rec: dict, outputs: list[dict], expected: str | None, errors:
     if analysis:
         facts.append("top candidates: " + ", ".join(f"{r['model']} {r['probability']:.0%}" for r in analysis["results"][:3])
                      + f"  ·  calibration n={analysis['calibration']['queries']} (cv {analysis['calibration']['cv_accuracy']:.1%})")
+    facts.append(f"fingerprint verdict: {a['fingerprint_verdict']}  ·  overall basis: {a['verdict_basis']}")
+    if a["fingerprint_note"]:
+        facts.append(a["fingerprint_note"])
     for e in hard[:3]:
-        facts.append("hard evidence: " + e["detail"])
+        facts.append(f"passive evidence [{e.get('kind') or '?'}] at {e.get('ts') or 'time unavailable'}: {e['detail']}")
     for e in soft[:2]:
         facts.append("needs your confirmation: " + e["detail"])
     for err in errors[:3]:
@@ -2127,19 +2187,27 @@ def db_recent_threads_detailed(since_ms: int, limit: int = 40) -> list[dict]:
 
 def probe_line(p: dict) -> str:
     """One-line report of a probe summary: 'Match · gpt-6-astra 100% · 3 of 3 answers · 41 s · 5m ago · probe a1b2c3d4e5'."""
+    p = project_probe_record(p)
     v = p.get("verdict") or ("Failed" if p.get("status") == "failed" else "…")
     word = {"DOWNGRADED!": "Downgraded", "MISMATCH": {"downgrade": "Downgrade", "upgrade": "Upgrade"}.get(p.get("direction") or "", "Rerouted"),
-            "SUSPICIOUS": "Suspicious", "MATCH": "Match", "UNLISTED": "Unlisted", "INVALID": "Invalid"}.get(v, str(v).capitalize())
+            "SUSPICIOUS": "Suspicious", "MATCH": "Match", "UNLISTED": "Unlisted", "INVALID": "Invalid", "AMBIGUOUS": "Ambiguous"}.get(v, str(v).capitalize())
     parts = [word]
     if v == "INVALID" or p.get("status") == "failed":
         parts.append((p.get("errors") or ["no usable sample"])[0])
     else:
-        text = p.get("prediction") or "?"
-        if isinstance(p.get("probability"), (int, float)):
+        text = (" / ".join(p["fingerprint_group"]) + " (not distinguishable)" if p.get("fingerprint_resolution") == "overlap"
+                else p.get("prediction") or "?")
+        if p.get("fingerprint_resolution") != "overlap" and isinstance(p.get("probability"), (int, float)):
             text += f" {p['probability']:.0%}"
-        if p.get("expected") and p.get("expected") != p.get("prediction") and isinstance(p.get("p_expected"), (int, float)):
+        if p.get("fingerprint_resolution") != "overlap" and p.get("expected") and p.get("expected") != p.get("prediction") and isinstance(p.get("p_expected"), (int, float)):
             text += f", declared {p['p_expected']:.0%}"
         parts.append(text)
+    if p.get("verdict_basis") == "passive":
+        parts.append(f"fingerprint {p.get('fingerprint_verdict') or 'unavailable'}")
+        for e in p.get("passive_reasons") or []:
+            parts.append(f"passive {e.get('kind') or '?'}: {e.get('detail') or 'details unavailable'} at {e.get('ts') or 'time unavailable'}")
+        if not p.get("passive_reasons"):
+            parts.append("historical passive event; details and time unavailable")
     n, q = p.get("used_outputs"), p.get("queries")
     if isinstance(n, int) and isinstance(q, int) and q:
         parts.append(f"{n} of {q} answers")
@@ -2180,9 +2248,13 @@ def report_text_for(title: str, model: str | None, effort: str | None, probes: l
     """Plain-text report of one session (what 'Copy report' puts on the clipboard)."""
     lines = [f"is-gpt-nerfed · {title} · {model or '?'}" + (f" @ {effort}" if effort else "")]
     for i, p in enumerate(probes):
+        p = project_probe_record(p)
         lines.append(("Last probe" if i == 0 else "Earlier") + " · " + probe_line(p))
+        if p.get("fingerprint_note"):
+            lines.append("Fingerprint resolution · " + p["fingerprint_note"])
         if i == 0 and p.get("results") and not p.get("stale_account"):
-            lines.append("Fingerprint · " + " · ".join(f"{r.get('model')} {(r.get('probability') or 0):.0%}" for r in p["results"]))
+            label = "Raw bank candidates (closed set)" if p.get("fingerprint_resolution") == "overlap" else "Fingerprint"
+            lines.append(label + " · " + " · ".join(f"{r.get('model')} {(r.get('probability') or 0):.0%}" for r in p["results"]))
     if not probes:
         lines.append("No probe yet")
     if failure:
@@ -2194,8 +2266,9 @@ def report_text_for(title: str, model: str | None, effort: str | None, probes: l
 
 def probe_summary(row: dict, current: str | None = None) -> dict:
     full = read_json(probe_path(row["id"]), {}) or {}
+    display = project_probe_record({**full, **{k: v for k, v in row.items() if v is not None}})
     errors = full.get("errors") or []
-    verdict = row.get("verdict") or full.get("verdict")
+    verdict = display.get("verdict")
     status = row.get("status") or full.get("status")
     finished_ts = parse_iso(row.get("finished") or full.get("finished"))
     account_id = row.get("account_id") or (full.get("account") or {}).get("id")
@@ -2204,12 +2277,14 @@ def probe_summary(row: dict, current: str | None = None) -> dict:
         "account_state": account_state(account_id, current),
         "id": row["id"], "thread_id": row.get("thread_id"), "mode": row.get("mode"), "status": status,
         "finished": row.get("finished"), "finished_ts": finished_ts, "finished_ago": ago(finished_ts),
-        "verdict": verdict, "direction": row.get("direction"), "expected": row.get("expected"), "prediction": row.get("prediction"),
+        "verdict": verdict, "direction": display.get("direction"), "expected": row.get("expected", full.get("expected")), "prediction": row.get("prediction", full.get("prediction")),
         "probability": row.get("probability"), "p_expected": row.get("p_expected", full.get("p_expected")),
-        "margin": row.get("margin", full.get("margin")), "confidence": row.get("confidence", full.get("confidence")),
+        "margin": row.get("margin", full.get("margin")), "confidence": display.get("confidence"),
         "used_outputs": row.get("used_outputs"), "queries": (row.get("queries") or 1) * (row.get("rounds") or full.get("rounds") or 1),
         "rounds": row.get("rounds") or full.get("rounds") or 1,
-        "elapsed_s": row.get("elapsed_s"), "errors": errors[:4], "quote": full.get("quote"), "started": full.get("started"),
+        "elapsed_s": row.get("elapsed_s"), "errors": errors[:4], "quote": display.get("quote"), "started": full.get("started"),
+        **{k: display.get(k) for k in ("fingerprint_verdict", "fingerprint_resolution", "fingerprint_group", "fingerprint_note",
+                                     "verdict_basis", "passive_reasons", "recorded_verdict")},
         "originator": full.get("originator"),
         "results": [{"model": r.get("model"), "probability": r.get("probability")} for r in (full.get("results") or [])[:4]],
         "is_downgrade": verdict == "DOWNGRADED!" or (verdict == "MISMATCH" and row.get("direction") == "downgrade"),
@@ -2227,7 +2302,7 @@ def demo_snapshot(cfg: dict) -> dict:
 
     def probe(pid, tid, verdict, direction=None, expected="gpt-6-astra", pred="gpt-6-astra", p=1.0, p_exp=None, margin=None,
               n=3, q=3, ago_s=300, errors=None, status="done", rounds=1, retries=0, mode="fork", stale=False, results=None):
-        return {"id": pid, "thread_id": tid, "mode": mode, "status": status, "finished": iso(t0 - ago_s), "finished_ts": t0 - ago_s,
+        return project_probe_record({"id": pid, "thread_id": tid, "mode": mode, "status": status, "finished": iso(t0 - ago_s), "finished_ts": t0 - ago_s,
                 "started": iso(t0 - ago_s - 41),
                 "results": results if results is not None else ([{"model": pred, "probability": p}] if pred and p is not None else []),
                 "account_id": "other0" if stale else "demo00", "stale_account": stale,
@@ -2236,7 +2311,7 @@ def demo_snapshot(cfg: dict) -> dict:
                 "margin": margin, "confidence": None if p is None else ("high" if p >= 0.8 else "low"), "used_outputs": n, "queries": q, "rounds": rounds,
                 "elapsed_s": 41.0, "errors": errors or [], "quote": "", "is_downgrade": verdict == "DOWNGRADED!" or (verdict == "MISMATCH" and direction == "downgrade"),
                 "is_upgrade": verdict == "MISMATCH" and direction == "upgrade",
-                "is_suspicious": verdict == "SUSPICIOUS", "retryable": status == "failed" or verdict == "INVALID", "retries": retries}
+                "is_suspicious": verdict == "SUSPICIOUS", "retryable": status == "failed" or verdict == "INVALID", "retries": retries})
 
     def thread(tid, title, model, effort, turns, ago_s, last, hard=0, soft=0, ev=None, due=False, running=False, halted=False,
                probes=None, evidence=None, failure=None, good=0):
@@ -2860,12 +2935,20 @@ def cmd_report(args) -> int:
     print()
     if rows:
         print(f"{'finished':20} {'probe':11} {'session':14} {'mode':5} {'expected':16} {'fingerprint':16} {'p':>5} {'n':>3} {'time':>5}  verdict")
+        rows = [probe_summary(r) for r in rows]
         for r in rows[-int(args.last or 30):]:
             p = f"{r['probability'] * 100:4.0f}%" if isinstance(r.get("probability"), (int, float)) else "  —  "
             print(f"{(r.get('finished') or '')[:19]:20} {r.get('id') or '':11} {short(r.get('thread_id'), 12):14} {(r.get('mode') or '')[:5]:5} "
                   f"{(r.get('expected') or '?')[:16]:16} {(r.get('prediction') or '?')[:16]:16} {p:>5} {r.get('used_outputs') or 0:>3} "
                   f"{r.get('elapsed_s') or 0:4.0f}s  {r.get('verdict')}{'*' if stale_for_account(r.get('account_id'), acct['id']) else ''}"
                   + (f" ({r['direction']})" if r.get("direction") else ""))
+            print(f"  fingerprint verdict: {r['fingerprint_verdict']} · overall basis: {r['verdict_basis']}")
+            if r.get("fingerprint_note"):
+                print("  " + r["fingerprint_note"])
+            for e in r.get("passive_reasons") or []:
+                print(f"  passive [{e.get('kind') or '?'}] at {e.get('ts') or 'time unavailable'}: {e.get('detail') or 'details unavailable'}")
+            if r.get("verdict_basis") == "passive" and not r.get("passive_reasons"):
+                print("  historical passive event; details and time unavailable")
         print()
         counts: dict = {}
         for r in rows:
@@ -2891,10 +2974,16 @@ def cmd_explain(args) -> int:
     rec = read_json(probe_path(args.probe_id))
     if not rec:
         raise SystemExit("unknown probe id")
+    rec = project_probe_record(rec)
     print(f"probe {rec['id']}  mode={rec.get('mode')}  status={rec.get('status')}  started={rec.get('started')}  finished={rec.get('finished')}")
     print(f"identified as {rec.get('originator') or '(clientInfo name)'}" + (f"  ·  codex {rec['codex']}" if rec.get("codex") else ""))
     print(f"session {rec.get('thread_id')}  expected {rec.get('expected')}  →  fingerprint {rec.get('prediction')} "
           f"({(rec.get('probability') or 0) * 100:.1f}%)  verdict {rec.get('verdict')} {rec.get('direction') or ''}")
+    print(f"fingerprint verdict: {rec['fingerprint_verdict']}  ·  overall basis: {rec['verdict_basis']}")
+    if rec.get("recorded_verdict"):
+        print(f"historical recorded verdict: {rec['recorded_verdict']} (displayed with the current fingerprint resolution)")
+    if rec.get("fingerprint_note"):
+        print(rec["fingerprint_note"])
     if rec.get("calibration"):
         print(f"calibration: {rec['calibration']['queries']} answer(s), beta {rec['calibration']['beta']:.2f}, cv accuracy {rec['calibration']['cv_accuracy']:.1%}")
     print()
@@ -2911,8 +3000,10 @@ def cmd_explain(args) -> int:
         for r in rec["results"]:
             print(f"  {r['model']:28} {r['probability'] * 100:5.1f}%   score {r['score']:+.3f}   profile-similarity {r['profile_similarity']:.3f}")
         print("families: " + ", ".join(f"{f['display_name']} {f['probability'] * 100:.1f}%" for f in rec.get("family_probabilities") or []))
-    for e in rec.get("hard_evidence") or []:
-        print("hard evidence:", e["detail"])
+    for e in rec.get("passive_reasons") or []:
+        print(f"passive evidence [{e.get('kind') or '?'}] at {e.get('ts') or 'time unavailable'}:", e.get("detail"))
+    if rec.get("verdict_basis") == "passive" and not rec.get("passive_reasons"):
+        print("historical passive event; details and time unavailable")
     for e in rec.get("soft_evidence") or []:
         print("needs confirmation:", e["detail"])
     for err in rec.get("errors") or []:
@@ -3604,7 +3695,9 @@ METHOD = f"""is-gpt-nerfed — how the verdict is made (v{VERSION})
    enrolled from the official Codex subscription; cross-validated accuracy 95.5% with 1 answer, 99.6% with 2,
    100% with 3). Verdict: the session's declared model vs the attribution, behind a confidence gate, because the
    calibrated softmax amplifies small score gaps (a "100%" can hide a thin margin):
-     MATCH        top candidate = declared model
+     MATCH        top candidate = declared model, outside a known fingerprint overlap
+     AMBIGUOUS    gpt-6-astra / gpt-6.1-sol cannot be reliably distinguished by the current fingerprint;
+                  neutral, no identity verdict, notification or halt
      MISMATCH     top candidate ≠ declared model AND p(top) ≥ {DEFAULT_CONFIG['mismatch_confidence']:.0%} AND p(declared) ≤ {1 - DEFAULT_CONFIG['mismatch_confidence']:.0%}
                   AND fused z-score margin ≥ {MARGIN_SIGMA}σ (direction: downgrade / upgrade / lateral by family and size tags)
      SUSPICIOUS   top candidate ≠ declared model but the gate is not met; the runner adds one more round of forks

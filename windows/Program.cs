@@ -12,7 +12,7 @@ using System.Windows.Forms;
 
 namespace Nerfed {
     internal static class Program {
-        const string Version = "0.5.3-port.4";
+        const string Version = "0.5.3-port.5";
         [STAThread]
         static int Main(string[] args) {
             string temporary = null, temporaryParent = null, temporaryName = null;

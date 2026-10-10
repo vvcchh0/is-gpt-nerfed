@@ -1,0 +1,13 @@
+{
+  "command": [
+    "C:\\Users\\17630\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+    "-B",
+    "D:\\AI\\common_workspace\\if-gpt-nerfed-main\\docs\\research\\gpt61-sol\\upstream\\data\\research\\gpt-6.1-sol-2026-10-02\\validate.py"
+  ],
+  "returncode": 0,
+  "stdout": "{\"integrity\": \"PASS\", \"enrollment\": 36, \"holdout\": 9, \"retained_failure\": 1, \"new_model_cv\": {\"1\": {\"correct\": 20, \"n\": 36}, \"2\": {\"correct\": 24, \"n\": 36}, \"3\": {\"correct\": 6, \"n\": 12}}, \"holdout_single_top1\": 5, \"holdout_group_top1\": 1, \"astra_three_reply_cv_before\": {\"correct\": 12, \"n\": 12}, \"astra_three_reply_cv_after\": {\"correct\": 9, \"n\": 12}, \"active_banks_unchanged\": true}\n",
+  "stderr": "",
+  "elapsed_seconds": 151.234,
+  "script_sha256": "aa31d97e2b326d85b20795ba41ef68bdea42b091cbdbd28577080a4f14c25e0e",
+  "execution_review": "validate.py and imported bank_builder.py, fingerprint.py, challenge_suite.py inspected; validate is offline and constructs candidate only in memory; bank_builder main write is guarded and not invoked."
+}

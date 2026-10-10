@@ -46,9 +46,10 @@ def offline_cli_functions():
     names = {
         "now", "iso", "normalize_model", "effort_idx", "model_version",
         "model_size", "model_profile", "compare_models", "classify_change",
-        "assess", "new_scan_state", "scan_rollout", "scan_full",
+        "assess_fingerprint", "fingerprint_fields", "assess", "new_scan_state", "scan_rollout", "scan_full",
     }
-    constants = {"DEFAULT_CONFIG", "EFFORTS", "SIZE_TAGS", "MARGIN_SIGMA"}
+    constants = {"DEFAULT_CONFIG", "EFFORTS", "SIZE_TAGS", "MARGIN_SIGMA",
+                 "FINGERPRINT_OVERLAP", "FINGERPRINT_OVERLAP_NOTE"}
     path = SCRIPTS / "nerfed"
     source = path.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(path))
@@ -155,7 +156,7 @@ def main():
     record("score_three_preparsed_answers", lambda: [core.robust_score_numbers(ns, bank) for ns in numbers])
     for n in (1, 2, 3):
         record(f"analyze_{n}_answers", lambda n=n: core.analyze_global_outputs(outputs[:n], bank))
-    record("assess_match_precomputed_analysis", lambda: cli["assess"](analysis["prediction"], analysis, []), 100)
+    record("assess_expected_top_precomputed_analysis", lambda: cli["assess"](analysis["prediction"], analysis, []), 100)
     record("assess_mismatch_precomputed_analysis_empty_catalog", lambda: cli["assess"](mismatched_expected, analysis, []), 100)
     record("analyze_and_assess_three_answers", lambda: cli["assess"](
         expected, core.analyze_global_outputs(outputs, bank), []))
